@@ -15,8 +15,6 @@ void setup() {
   keys.set("b", "OFF");
   keys.set("c", "OFF");
   keys.set("d", "OFF");
-  keys.set("V1", "0");
-  keys.set("V2", "0");
   fill(255);
 }
 
@@ -58,13 +56,7 @@ void read() {
   case "d":
     break;
   default:
-    if ((str(controller.charAt(0)) + str(controller.charAt(1))).equals("V1")){
-      //Ahh, im certain if i had lambdas, this would be a whole lot better
-      
-    } else if ((str(controller.charAt(0)) + str(controller.charAt(1))).equals("V2")){
-    } else {
-      println("hey man, you did something wrong");
-    }
+    println("Um, hey man you did something wrong");
   }
 }
 
