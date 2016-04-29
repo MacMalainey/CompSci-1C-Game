@@ -13,11 +13,11 @@ String loadSong = "test.mp3";
 // DON'T TOUCH ANYTHING BELOW THIS LINE
 
 // make the arraylist
-ArrayList<String[]> notes = new ArrayList<String[]>();
+ArrayList<int[]> notes = new ArrayList<int[]>();
 // make the array
-// format is {isitaslider, isitaheldnote, column, position, {slider_column_start, slider_start, slider_column_end, slider_end}, {held_start, held_end}}
+// format is {isitaslider, isitaheldnote, column, position, slider_column_start, slider_start, slider_column_end, slider_end, held_start, held_end}
 //                                                          These are only used if the note is a slider or held note, otherwise all values are ignored
-int[] temparray = new int[4];
+int[] temparray = new int[10];
 
 Minim minim;
 AudioPlayer song;
@@ -37,7 +37,6 @@ void setup() {
   background(0);
   minim = new Minim(this);
   song = minim.loadFile(loadSong);
-  
   songLength = song.length();
 }
 
@@ -75,6 +74,7 @@ void draw() {
   stroke(0, 0, 255);
   line(cursorPos*144, milliPos, cursorPos*144+144, milliPos);
   
+  
   // draw millisecond markers
   textSize(16);
   text("0", 600, 1200);
@@ -108,5 +108,17 @@ void keyReleased() {
   }
 }
 
-void addNote() {
-  
+void addNote(int cursorPos, int milliPos) {
+  temparray[0] = 0;
+  temparray[1] = 0;
+  temparray[2] = cursorPos;
+  temparray[3] = milliPos;
+  temparray[4] = 0;
+  temparray[5] = 0;
+  temparray[6] = 0;
+  temparray[7] = 0;
+  temparray[8] = 0;
+  temparray[9] = 0;
+  notes.add(temparray);
+  temparray = new int[10];
+}
