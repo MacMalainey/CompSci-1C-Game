@@ -34,6 +34,15 @@ void draw() {
     if (ardu.available() > 0) {
       read();
     }
+    ellipseMode(CENTER);
+    if (keys.get("a").equals("HELD")) fill(255, 0, 0); else fill(255);
+    ellipse(120, 200, 100, 100);
+    if (keys.get("b").equals("HELD")) fill(255, 0, 0); else fill(255);
+    ellipse(240, 200, 100, 100);
+    if (keys.get("c").equals("HELD")) fill(255, 0, 0); else fill(255);
+    ellipse(360, 200, 100, 100);
+    if (keys.get("d").equals("HELD")) fill(255, 0, 0); else fill(255);
+    ellipse(480, 200, 100, 100);
   }
 }
 
