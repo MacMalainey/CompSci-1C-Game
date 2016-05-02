@@ -4,7 +4,6 @@ void setup() {
   // put your setup code here, to run once:
   connection = false;
   Serial.begin(9600);
-  lastRead = 0;
   pinMode(2, INPUT_PULLUP);
   pinMode(3, INPUT_PULLUP);
   pinMode(4, INPUT_PULLUP);
@@ -18,23 +17,21 @@ void loop() {
     if (digitalRead(4) == LOW) Serial.println("c");
     if (digitalRead(5) == LOW) Serial.println("d");
   }
-  if (Serial.available > 0){
+  if (Serial.available() > 0){
     readSerial();
   }
 }
 
 void readSerial(){
   String input;
-  while (Serial.available > 0){
+  while (Serial.available() > 0){
+    delay(10);
     input += char(Serial.read());
   }
-  switch (input){
-    case "RETURN TYPE":
+  if (input.equals("RETURN TYPE")){
     Serial.println("rhCon");
-    break;
-    case "START":
+  } else if (input.equals("START")){
     connection = true;
-    break;
   }
 }
 
