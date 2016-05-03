@@ -50,7 +50,7 @@ for notenum in range(0, len(hitobjects)):
     else:
         noteType = -1
 
-    hitobjectsconverted.append(str(notex) + ',' + str(time) + ',' + str(noteType))
+    hitobjectsconverted.append(str(int(notex)) + ',' + str(int(time)) + ',' + str(int(noteType)))
 
 print ("Writing...")
 
