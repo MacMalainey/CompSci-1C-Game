@@ -1,6 +1,3 @@
-import json
-import math
-
 beatmap = open('map.osu', 'r')  # change map.osu to file name
 
 readBeatmap = beatmap.read()
@@ -36,6 +33,9 @@ if '' in events: events.remove('')
 if '' in timingpoints: timingpoints.remove('')
 if '' in hitobjects: hitobjects.remove('')
 
+# remove comments in events
+cleanevents = [e for e in events if not "//" in e]
+
 # start converting hitobjects
 hitobjectsconverted = []
 
@@ -56,5 +56,20 @@ print ("Writing...")
 
 # start writing to file
 output = open('output.bMap', 'w')
-output.write(json.dumps(hitobjectsconverted, sort_keys=True, indent=4))
+
+# write metadata
+output.write("[Metadata]\n")
+for writebuffer in range(0, len(general)):
+    output.write(general[writebuffer] + "\n")
+for writebuffer in range(0, len(editor)):
+    output.write(editor[writebuffer] + "\n")
+for writebuffer in range(0, len(metadata)):
+    output.write(metadata[writebuffer] + "\n")
+for writebuffer in range(0, len(cleanevents)):
+    output.write(cleanevents[writebuffer] + "\n")
+
+# write hitobjects
+output.write("\n[Hitobjects]\n")
+for writebuffer in range(0, len(hitobjectsconverted)):
+    output.write(hitobjectsconverted[writebuffer] + "\n")
 output.close()
