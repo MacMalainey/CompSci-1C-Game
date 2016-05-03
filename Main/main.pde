@@ -2,18 +2,24 @@ int cursor;  //yOffset
 int state;
 StringList logs = new StringList();
 PrintWriter logFile = createWriter("Log " + str(day()) + " " + str(month()) + " " + str(year()) + ".log");
-ArrayList<note> notes = new ArrayList<note>();
-ArrayList<song> songsList = new ArrayList<song>();
-boolean held = false;
-ArrayList<File> songsDir = new ArrayList<File>();
-ArrayList<button> GUI = new ArrayList<button>();
+ArrayList<note> notes = new ArrayList<note>(); //stores notes in game
+ArrayList<song> songsList = new ArrayList<song>();  //stores songs objects
+boolean held = false; //used to make sure mouseclicked commands dont repeat
+ArrayList<File> songsDir = new ArrayList<File>();//stores folder files for directory
+ArrayList<button> GUI = new ArrayList<button>();//stores the buttons
 boolean[] keys =  new boolean[4];//holds the keys
+int[] scroll = new int[2];
 void setup(){
   size(750, 900);
   cursor = 0;
   state = 0;
   loadMainGUI();
   loadSongDirectories();
+}
+void spawnNotes(){
+  //Iterate through song notes and make a class for each one
+  //Every note needs to be made in this format:
+  //notes.add(new note(int column, int time, int held);
 }
 void saveSongDirectories(){
   //Loads the song directories from a file
@@ -25,42 +31,52 @@ void saveSongDirectories(){
   saveStrings("bMapDir.list", store.array());
 }
 
-void loadSongDirectories(){
+void loadSongDirectories(){ //loads through beatmap file, first checks if it exists
   boolean changes = false;
-  if ((new File("bMapDir.list").exists())){
+  if ((new File(sketchPath("bMapDir.list")).exists())){
     for (String item : loadStrings("bMapDir.list")){
       File directory = new File(item);
       if (directory.exists()){
         songsDir.add(directory);
-        logs.append("Adding directory on path: " + item + "to list");
+        logs.append("Adding directory on path: " + item + " to list");
       } else {
         changes = true;
         logs.append("Song directory " + item + " does not exist");
       }
     }
     if (changes){
-      logs.append("Re-writing song directorie list, files listed have been altered");
+      logs.append("Re-writing song directory list, files listed have been altered");
       saveSongDirectories();
     }
   } else {
     createWriter("bMapDir.list");
+    logs.append("bMapDir.list not found, creating file");
   }
 }
-void loadMainGUI(){
+
+void loadMainGUI(){ //creates GUI objects needed for the main screen
   GUI.clear();
   GUI.add(new button(width - 100, height - 70, "import"));
   GUI.add(new button(width - 100, height - 200, "play"));
 }
-void folderSelected(File selected){
-  if (selected != null){
+
+void folderSelected(File selected){ //used for importing 
+  boolean duplicates = false;
+  for (File item : songsDir){
+    if (item.getAbsolutePath().equals(selected.getAbsolutePath())) duplicates = true;
+  }
+  if (selected != null && !duplicates){
     songsDir.add(selected);
+    saveSongDirectories();
     logs.append("Added Directory: " + selected.getAbsolutePath());
     logs.append("Refreshing song list");
     loadSongs();
-    logs.append("BUILD FUNCTION FOR ADDING SONG TO DIRECTIORY LIST");
+  } else if (selected != null && duplicates){
+    logs.append("File: " + selected.getAbsolutePath() + " was already included in directory list");
   } else logs.append("Import cancelled");
 }
-void loadSongs(){
+
+void loadSongs(){  //loads songs in songs array
   for (File item : songsDir){
     for (File it2 : item.listFiles()){
       String fileExt = "";
@@ -75,6 +91,7 @@ void loadSongs(){
     }
   }
 }
+
 void draw(){
   background(90,0, 90);
   switch (state){
@@ -83,18 +100,6 @@ void draw(){
     textAlign(CENTER);
     fill(255);
     text("COMPSCI 1C RHYTHM BEAT", width/2, 50);
-    for(button item : GUI){
-      item.hover();
-      String res = item.pressed();
-      if (!(res.equals("false"))){
-        switch(res){
-          case "import":
-          selectFolder("Select folder containing beatmaps to import", "folderSelected");
-          break;
-        }
-      }
-      item.art();
-    }
     break;
     case 1:
     for(note item : notes){
@@ -102,6 +107,23 @@ void draw(){
       item.art();
     }
     break;
+  }
+  for(button item : GUI){
+    item.hover();
+    switch(item.pressed()){
+      case "import":
+      selectFolder("Select folder containing beatmaps to import", "folderSelected");
+      break;
+      case "start":
+      logs.append("Starting game. IF IT WAS MADE");
+      break;
+      case "back":
+      logs.append("Heading back to main menu");
+      loadMainGUI();
+      state = 0;
+      break;
+    }
+    item.art();
   }
   if(logs.size() > 0){
     logProcess(logs.array());
@@ -142,13 +164,14 @@ class button{
     } else return "false";
   }
 }
-String[] parseMeta(String path){  //parse through the metadata of the songs
+StringDict parseMeta(String path){  //parse through the metadata of the songs
   
   return null;
-}
-class song{
+} 
+class song{ //stores song properties
+  StringDict properties;
   song(String path){
-  String[] data = parseMeta(path);
+  properties = parseMeta(path);
   }
   void display(){
   }
@@ -158,9 +181,11 @@ class note{
   int column;
   int y;
   boolean success;
-  note(int time, int where){
+  int held;
+  note(int where, int time, int stop){
     y = time;
     column = where;
+    held = stop;
     success = false;
   }
   void move(){
@@ -171,14 +196,14 @@ class note{
   }
 }
 
-void logProcess(String[] output){
+void logProcess(String[] output){ //prints out logs to a file every loop
   for(String item : output){
     logFile.println("[" + str(hour()) + ":" + str(minute()) + ":" + str(second()) + "]: " + item);
     println(item);
   }
 }
 
-void keyTyped(){
+void keyTyped(){  //PLEASE PROPERLY EXIT THE SKETCH BY PRESSING 't' IF YOU WANT THE DEBUG TO APPEAR PROPERLY
   if (key == 't'){
     logFile.flush();
     logFile.close();
