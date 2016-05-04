@@ -238,7 +238,16 @@ class button{
   }
 }
 StringDict parseMeta(String path){  //parse through the metadata of the songs
-  
+  String[] loadedmap = loadStrings(path);
+  StringDict meta = new StringDict();
+  for (String item : loadedmap){
+    boolean keyDone = false;
+    String result = "";
+    for (int index = 0; index < item.length(); index++){
+      if (item.charAt(index) == ':' && keyDone );
+      result+= str(item.charAt(index));
+    }
+  }
   return null;
 } 
 class song{ //stores song properties
