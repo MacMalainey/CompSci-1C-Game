@@ -9,6 +9,7 @@ ArrayList<File> songsDir = new ArrayList<File>();//stores folder files for direc
 ArrayList<button> GUI = new ArrayList<button>();//stores the buttons
 boolean[] keys =  new boolean[4];//holds the keys
 slist GUIlist;
+boolean scrolling;
 void setup(){
   logFile = createWriter(sketchPath() + "/logs/Log " + str(day()) + " " + str(month()) + " " + str(year()) + ".log");
   size(750, 900);
@@ -16,6 +17,7 @@ void setup(){
   state = 0;
   loadMainGUI();
   loadSongDirectories();
+  scrolling = false;
 }
 
 void spawnNotes(){
@@ -128,7 +130,7 @@ void draw(){
       selectFolder("Select folder containing beatmaps to import", "folderSelected");
       break;
       case "start":
-      logs.append("Starting game. IF IT WAS MADE");
+      logs.append("Starting game");
       break;
       case "back":
       logs.append("Heading back to main menu");
@@ -142,29 +144,31 @@ void draw(){
     logProcess(logs.array());
     logs.clear();
   }
-  if (!mousePressed && held){
+  if (!mousePressed && (held || scrolling)){
     held = false;
+    scrolling = false;
   }
 }
 class slist{
+  int mouseStr;
   int scroll;
   int pressed;
   int scrollDisplay;
+  int origin;
   slist(){
     scroll = 0;
     pressed = -1;
+    scrollDisplay = 0;
   }
   void display(){
     rectMode(CORNER);
-    fill(230);
     fill(50);
     rect(510, 190, 40, 540);
     if (songsList.size() > 0){
-      if (10/songsList.size() < 1){
-        fill(0);
-        rect(510, 190, 40, 540);
+      fill(230);
+      if (songsList.size() > 10){
+        rect(510,scrollDisplay +  190, 40, (10/float(songsList.size())) * 540);
       } else {
-        fill(230);
         rect(510, 190, 40, 540);
       }
     }
@@ -202,12 +206,24 @@ class slist{
     }
   }
   void selection(){
-    if(mousePressed && !held && abs(mouseX - 300) <= 270 && abs(mouseY - 460) <= 310){
+    if (songsList.size() > 10){
+      if (mousePressed && !held && abs(mouseX - 530) <= 20 && abs(mouseY - 460) <= 270 && !scrolling){
+        scrolling = true;
+        mouseStr = mouseY;
+        origin = scrollDisplay;
+      } else if (scrolling){
+       scrollDisplay = origin + (mouseY - mouseStr);
+       if (scrollDisplay < 0) scrollDisplay = 0;
+       else if (scrollDisplay + (10/float(songsList.size())) * 540 > 540) scrollDisplay = 540 - int((10/float(songsList.size())) * 540);
+       float math = 540 - ((10/float(songsList.size())) * 540);
+       scroll = int((scrollDisplay/math) * (songsList.size() - 10));
+      }
+    }if(mousePressed && !held && !scrolling && abs(mouseX - 300) <= 270 && abs(mouseY - 460) <= 310){
       held = true;
       if(songsList.size() > 10){
         if (abs(mouseX - 530) <= 20 && abs(mouseY - 170) <= 20){
           if(scroll + 10 < songsList.size()) scroll++;
-        } else if (abs(mouseX - 530) <= 20 & abs(mouseY - 750) <= 20){
+        } else if (abs(mouseX - 530) <= 20 && abs(mouseY - 750) <= 20){
           if(scroll > 0) scroll--;
         }
       }
@@ -215,6 +231,7 @@ class slist{
        pressed = scroll + int((mouseY - 150)/62);
       }
     }
+    
   }
 }
 class button{
