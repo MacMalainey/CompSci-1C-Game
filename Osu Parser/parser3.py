@@ -55,7 +55,7 @@ for notenum in range(0, len(hitobjects)):
 print ("Writing...")
 
 # start writing to file
-output = open('output.bMap', 'w')
+output = open('map.bMap', 'w')
 
 # write metadata
 output.write("[Metadata]\n")
