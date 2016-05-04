@@ -1,26 +1,29 @@
 int cursor;  //yOffset
 int state;
 StringList logs = new StringList();
-PrintWriter logFile = createWriter("Log " + str(day()) + " " + str(month()) + " " + str(year()) + ".log");
+PrintWriter logFile;
 ArrayList<note> notes = new ArrayList<note>(); //stores notes in game
 ArrayList<song> songsList = new ArrayList<song>();  //stores songs objects
 boolean held = false; //used to make sure mouseclicked commands dont repeat
 ArrayList<File> songsDir = new ArrayList<File>();//stores folder files for directory
 ArrayList<button> GUI = new ArrayList<button>();//stores the buttons
 boolean[] keys =  new boolean[4];//holds the keys
-int[] scroll = new int[2];
+slist GUIlist;
 void setup(){
+  logFile = createWriter(sketchPath() + "/logs/Log " + str(day()) + " " + str(month()) + " " + str(year()) + ".log");
   size(750, 900);
   cursor = 0;
   state = 0;
   loadMainGUI();
   loadSongDirectories();
 }
+
 void spawnNotes(){
   //Iterate through song notes and make a class for each one
   //Every note needs to be made in this format:
   //notes.add(new note(int column, int time, int held);
 }
+
 void saveSongDirectories(){
   //Loads the song directories from a file
   StringList store = new StringList();
@@ -52,38 +55,46 @@ void loadSongDirectories(){ //loads through beatmap file, first checks if it exi
     createWriter("bMapDir.list");
     logs.append("bMapDir.list not found, creating file");
   }
+  loadSongs();
 }
 
 void loadMainGUI(){ //creates GUI objects needed for the main screen
   GUI.clear();
   GUI.add(new button(width - 100, height - 70, "import"));
   GUI.add(new button(width - 100, height - 200, "play"));
+  GUIlist = new slist();
+}
+
+void loadPlayGUI(){ //creates GUI objects needed for play screen
 }
 
 void folderSelected(File selected){ //used for importing 
-  boolean duplicates = false;
-  for (File item : songsDir){
-    if (item.getAbsolutePath().equals(selected.getAbsolutePath())) duplicates = true;
+  if (selected != null){
+    boolean duplicates = false;
+    for (File item : songsDir){
+      if (item.getAbsolutePath().equals(selected.getAbsolutePath())) duplicates = true;
+    }
+    if (!duplicates){
+      songsDir.add(selected);
+      saveSongDirectories();
+      logs.append("Added Directory: " + selected.getAbsolutePath());
+      logs.append("Refreshing song list");
+      loadSongs();
+    } else if (duplicates){
+      logs.append("File: " + selected.getAbsolutePath() + " was already included in directory list");
+    } else logs.append("Import cancelled");
   }
-  if (selected != null && !duplicates){
-    songsDir.add(selected);
-    saveSongDirectories();
-    logs.append("Added Directory: " + selected.getAbsolutePath());
-    logs.append("Refreshing song list");
-    loadSongs();
-  } else if (selected != null && duplicates){
-    logs.append("File: " + selected.getAbsolutePath() + " was already included in directory list");
-  } else logs.append("Import cancelled");
 }
 
 void loadSongs(){  //loads songs in songs array
+  songsList.clear();
   for (File item : songsDir){
     for (File it2 : item.listFiles()){
       String fileExt = "";
       String path = it2.getName();
       for (int itemChar = path.length() - 1; path.charAt(itemChar) != '.'; itemChar--){
         fileExt += str(path.charAt(itemChar));
-        if (fileExt.equals("bMap")){
+        if (fileExt.equals("paMb")){  //The way im inputing to the string makes it backwards....  Whoops
           songsList.add(new song(it2.getAbsolutePath()));
           logs.append("LOADED BEATMAP: " + path);
         }
@@ -100,6 +111,8 @@ void draw(){
     textAlign(CENTER);
     fill(255);
     text("COMPSCI 1C RHYTHM BEAT", width/2, 50);
+    GUIlist.display();
+    GUIlist.selection();
     break;
     case 1:
     for(note item : notes){
@@ -131,6 +144,66 @@ void draw(){
   }
   if (!mousePressed && held){
     held = false;
+  }
+}
+class slist{
+  int scroll;
+  int pressed;
+  slist(){
+    scroll = 0;
+    pressed = -1;
+  }
+  void display(){
+    rectMode(CORNER);
+    fill(0);
+    rect(30, 150, 480, 620);
+    fill(50);
+    rect(510, 190, 40, 540);
+    if (songsList.size() <= 10){
+      fill(50);
+      rect(510, 150, 40, 40);
+      rect(510, 730, 40, 40);
+      fill(200);
+      triangle(510, 150, 550, 150, 530, 190);
+      triangle(510, 770, 550, 770, 530, 730);
+    } else {
+      fill(230);
+      rect(510, 150, 40, 40);
+      rect(510, 730, 40, 40);
+      fill(150);
+      triangle(510, 150, 550, 150, 530, 190);
+      triangle(510, 770, 550, 770, 530, 730);
+    }
+    if (pressed - scroll >= 0 && pressed - scroll < 10){
+      fill(200);
+      rect(30, 150 + (62 * (pressed - scroll)), 480, 63);
+    }
+    if (songsList.size() > 0){
+      for(int item = scroll; item < scroll + 10; item++){
+        if (item >= songsList.size()) break;
+        song display = songsList.get(item);
+        textAlign(LEFT, TOP);
+        fill(255);
+        textSize(17);
+        text(display.returnPath(), 30, 150 + (62 * (item - scroll)));
+        textAlign(CENTER);
+      }
+    }
+  }
+  void selection(){
+    if(mousePressed && !held && abs(mouseX - 300) <= 270 && abs(mouseY - 460) <= 310){
+      held = true;
+      if(songsList.size() > 10){
+        if (abs(mouseX - 530) <= 20 && abs(mouseY - 170) <= 20){
+          if(scroll + 10 < songsList.size()) scroll++;
+        } else if (abs(mouseX - 530) <= 20 & abs(mouseY - 750) <= 20){
+          if(scroll > 0) scroll--;
+        }
+      }
+      if (abs(270 - mouseX) <= 240 && abs(460 - mouseY)<= 310){
+       pressed = scroll + int((mouseY - 150)/62);
+      }
+    }
   }
 }
 class button{
@@ -171,9 +244,17 @@ StringDict parseMeta(String path){  //parse through the metadata of the songs
 class song{ //stores song properties
   StringDict properties;
   song(String path){
-  properties = parseMeta(path);
+  properties = new StringDict();
+ // properties = parseMeta(path);
+  properties.set("path", path);
   }
-  void display(){
+  void display(int x, int y){
+    textAlign(LEFT);
+    text(properties.get("path"), x, y);
+    textAlign(CENTER);
+  }
+  String returnPath(){
+    return properties.get("path");
   }
 }
 
