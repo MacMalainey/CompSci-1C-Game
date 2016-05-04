@@ -149,16 +149,27 @@ void draw(){
 class slist{
   int scroll;
   int pressed;
+  int scrollDisplay;
   slist(){
     scroll = 0;
     pressed = -1;
   }
   void display(){
     rectMode(CORNER);
-    fill(0);
-    rect(30, 150, 480, 620);
+    fill(230);
     fill(50);
     rect(510, 190, 40, 540);
+    if (songsList.size() > 0){
+      if (10/songsList.size() < 1){
+        fill(0);
+        rect(510, 190, 40, 540);
+      } else {
+        fill(230);
+        rect(510, 190, 40, 540);
+      }
+    }
+    fill(0);
+    rect(30, 150, 480, 620);
     if (songsList.size() <= 10){
       fill(50);
       rect(510, 150, 40, 40);
@@ -174,7 +185,7 @@ class slist{
       triangle(510, 150, 550, 150, 530, 190);
       triangle(510, 770, 550, 770, 530, 730);
     }
-    if (pressed - scroll >= 0 && pressed - scroll < 10){
+    if (pressed - scroll >= 0 && pressed - scroll < 10  && pressed < songsList.size()){
       fill(200);
       rect(30, 150 + (62 * (pressed - scroll)), 480, 63);
     }
