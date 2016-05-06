@@ -1,5 +1,5 @@
 int cursor;  //yOffset
-int state;
+int state; //game state
 StringList logs = new StringList();
 PrintWriter logFile;
 ArrayList<note> notes = new ArrayList<note>(); //stores notes in game
@@ -15,8 +15,8 @@ void setup(){
   size(750, 900);
   cursor = 0;
   state = 0;
-  loadMainGUI();
-  loadSongDirectories();
+  loadMainGUI();  //loads main menu GUI
+  loadSongDirectories();  //loads the song directories from the bMapDir.list file
   scrolling = false;
 }
 
@@ -37,11 +37,11 @@ void saveSongDirectories(){
 }
 
 void loadSongDirectories(){ //loads through beatmap file, first checks if it exists
-  boolean changes = false;
-  if ((new File(sketchPath("bMapDir.list")).exists())){
+  boolean changes = false;  //checks for any changes in file system that are relevant to paths already imported
+  if ((new File(sketchPath("bMapDir.list")).exists())){ //checks if bMap list exists
     for (String item : loadStrings("bMapDir.list")){
-      File directory = new File(item);
-      if (directory.exists()){
+      File directory = new File(item);  //create File object to check for directory
+      if (directory.exists()){ //if directory exits
         songsDir.add(directory);
         logs.append("Adding directory on path: " + item + " to list");
       } else {
@@ -57,7 +57,7 @@ void loadSongDirectories(){ //loads through beatmap file, first checks if it exi
     createWriter("bMapDir.list");
     logs.append("bMapDir.list not found, creating file");
   }
-  loadSongs();
+  loadSongs();  //loads the song objects
 }
 
 void loadMainGUI(){ //creates GUI objects needed for the main screen
@@ -68,15 +68,16 @@ void loadMainGUI(){ //creates GUI objects needed for the main screen
 }
 
 void loadPlayGUI(){ //creates GUI objects needed for play screen
+  GUI.clear();
 }
 
 void folderSelected(File selected){ //used for importing 
-  if (selected != null){
+  if (selected != null){  //if something went wrong with the import, it wont run
     boolean duplicates = false;
     for (File item : songsDir){
       if (item.getAbsolutePath().equals(selected.getAbsolutePath())) duplicates = true;
     }
-    if (!duplicates){
+    if (!duplicates){  //checks for path duplicates
       songsDir.add(selected);
       saveSongDirectories();
       logs.append("Added Directory: " + selected.getAbsolutePath());
@@ -84,8 +85,8 @@ void folderSelected(File selected){ //used for importing
       loadSongs();
     } else if (duplicates){
       logs.append("File: " + selected.getAbsolutePath() + " was already included in directory list");
-    } else logs.append("Import cancelled");
-  }
+    }
+  } else logs.append("Import cancelled");
 }
 
 void loadSongs(){  //loads songs in songs array
@@ -95,7 +96,7 @@ void loadSongs(){  //loads songs in songs array
       String fileExt = "";
       String path = it2.getName();
       for (int itemChar = path.length() - 1; path.charAt(itemChar) != '.'; itemChar--){
-        fileExt += str(path.charAt(itemChar));
+        fileExt += str(path.charAt(itemChar));  //checks for the extension of the file
         if (fileExt.equals("paMb")){  //The way im inputing to the string makes it backwards....  Whoops
           songsList.add(new song(it2.getAbsolutePath()));
           logs.append("LOADED BEATMAP: " + path);
@@ -107,8 +108,8 @@ void loadSongs(){  //loads songs in songs array
 
 void draw(){
   background(90,0, 90);
-  switch (state){
-    case 0:
+  switch (state){  //switch game state
+    case 0:  //main menu
     textSize(40);
     textAlign(CENTER);
     fill(255);
@@ -116,20 +117,20 @@ void draw(){
     GUIlist.display();
     GUIlist.selection();
     break;
-    case 1:
+    case 1:  //game
     for(note item : notes){
       item.move();
       item.art();
     }
     break;
   }
-  for(button item : GUI){
+  for(button item : GUI){  //this will spawn the gui buttons
     item.hover();
     switch(item.pressed()){
       case "import":
       selectFolder("Select folder containing beatmaps to import", "folderSelected");
       break;
-      case "start":
+      case "play":
       logs.append("Starting game");
       break;
       case "back":
@@ -140,20 +141,25 @@ void draw(){
     }
     item.art();
   }
-  if(logs.size() > 0){
+  if(logs.size() > 0){  // if something is in the log print it
     logProcess(logs.array());
     logs.clear();
   }
-  if (!mousePressed && (held || scrolling)){
+  if (!mousePressed && (held || scrolling)){  //used to check if a button is being pressed, but it won't activate multiple times.  Whereas it needs to be different with the scroll bar
     held = false;
     scrolling = false;
   }
 }
 class slist{
+  //the start yPos for the mouse movement
   int mouseStr;
+  //How many items were scrolled down
   int scroll;
+  //what item was pressed
   int pressed;
+  //Where the scroll bar shows up on the gui
   int scrollDisplay;
+  //used for math /w scroll bar
   int origin;
   slist(){
     scroll = 0;
@@ -164,9 +170,9 @@ class slist{
     rectMode(CORNER);
     fill(50);
     rect(510, 190, 40, 540);
-    if (songsList.size() > 0){
+    if (songsList.size() > 0){ //displays scrollbar
       fill(230);
-      if (songsList.size() > 10){
+      if (songsList.size() > 10){  //displays a mobile scrollbar
         rect(510,scrollDisplay +  190, 40, (10/float(songsList.size())) * 540);
       } else {
         rect(510, 190, 40, 540);
@@ -174,26 +180,26 @@ class slist{
     }
     fill(0);
     rect(30, 150, 480, 620);
-    if (songsList.size() <= 10){
+    if (songsList.size() <= 10){ //displays buttons that aren't active
       fill(50);
       rect(510, 150, 40, 40);
       rect(510, 730, 40, 40);
       fill(200);
       triangle(510, 150, 550, 150, 530, 190);
       triangle(510, 770, 550, 770, 530, 730);
-    } else {
+    } else {  //displays active scroll buttons
       fill(230);
       rect(510, 150, 40, 40);
       rect(510, 730, 40, 40);
       fill(150);
       triangle(510, 150, 550, 150, 530, 190);
       triangle(510, 770, 550, 770, 530, 730);
-    }
+    }  //displays the pressed graphic if a list item on screen was pressed
     if (pressed - scroll >= 0 && pressed - scroll < 10  && pressed < songsList.size()){
       fill(200);
       rect(30, 150 + (62 * (pressed - scroll)), 480, 63);
     }
-    if (songsList.size() > 0){
+    if (songsList.size() > 0){  //displays song names
       for(int item = scroll; item < scroll + 10; item++){
         if (item >= songsList.size()) break;
         song display = songsList.get(item);
@@ -206,39 +212,39 @@ class slist{
     }
   }
   void selection(){
-    if (songsList.size() > 10){
-      if (mousePressed && !held && abs(mouseX - 530) <= 20 && abs(mouseY - 460) <= 270 && !scrolling){
+    if (songsList.size() > 10){  //will only run if the songsList is bigger than what the list can hold
+      if (mousePressed && !held && abs(mouseX - 530) <= 20 && abs(mouseY - 460) <= 270 && !scrolling){  //this initializes the scroll
         scrolling = true;
         mouseStr = mouseY;
         origin = scrollDisplay;
-      } else if (scrolling){
+      } else if (scrolling){  //this actually runs the scroll
        scrollDisplay = origin + (mouseY - mouseStr);
-       if (scrollDisplay < 0) scrollDisplay = 0;
+       if (scrollDisplay < 0) scrollDisplay = 0;  //checks if scrollDisplay is higher/lower than it should be and prevents it
        else if (scrollDisplay + (10/float(songsList.size())) * 540 > 540) scrollDisplay = 540 - int((10/float(songsList.size())) * 540);
+       //could have done this in 1 step, but for readability i did it in two
        float math = 540 - ((10/float(songsList.size())) * 540);
        scroll = int((scrollDisplay/math) * (songsList.size() - 10));
       }
-    }if(mousePressed && !held && !scrolling && abs(mouseX - 300) <= 270 && abs(mouseY - 460) <= 310){
+    }if(mousePressed && !held && !scrolling && abs(mouseX - 300) <= 270 && abs(mouseY - 460) <= 310){  //this is for list selection and button scrolling
       held = true;
-      if(songsList.size() > 10){
+      if(songsList.size() > 10){  //buttons only work if more items in list than can be displayed at once
         if (abs(mouseX - 530) <= 20 && abs(mouseY - 170) <= 20){
           if(scroll + 10 < songsList.size()) scroll++;
         } else if (abs(mouseX - 530) <= 20 && abs(mouseY - 750) <= 20){
           if(scroll > 0) scroll--;
         }
-      }
+      }  //list selection
       if (abs(270 - mouseX) <= 240 && abs(460 - mouseY)<= 310){
        pressed = scroll + int((mouseY - 150)/62);
       }
     }
-    
   }
 }
 class button{
-  color cProp;
-  int x;
-  int y;
-  String title;
+  color cProp;  //color of the button
+  int x;  //unlike the scrollbar, the buttons wont all be in the same place
+  int y;  //so when initialized they need to be told where to be put
+  String title;  //what the button says, and what it returns when pressed
   button(int xA, int yA, String text){
     x = xA;
     y = yA;
@@ -246,6 +252,7 @@ class button{
     cProp = color(0, 0, 200);
   }
   void art(){
+    //displays the button
     fill(cProp);
     rectMode(CENTER);
     rect(x, y, 150, 70);
@@ -254,12 +261,16 @@ class button{
     text(title, x, y);
   }
   void hover(){
-    if (abs(mouseX - x) <= 75 && abs(mouseY - y) <= 35) cProp = color(0, 0, 150);
+    //changes the color of the button if the mouse is hovering over it
+    if (abs(mouseX - x) <= 75 && abs(mouseY - y) <= 35 && !held && !scrolling) cProp = color(0, 0, 150);
     else cProp = color(0, 0, 200);
   }
-  String pressed(){
-    if (mousePressed && abs(mouseX - x) <= 75 && abs(mouseY - y) <= 35) cProp = color(100, 100, 255);
-    if (mousePressed && !held && abs(mouseX - x) <= 75 && abs(mouseY - y) <= 35){
+  String pressed(){  //check if it has been pressed
+    if (mousePressed && abs(mouseX - x) <= 75 && abs(mouseY - y) <= 35 && !scrolling) cProp = color(100, 100, 255);  //well show that the button is being pressed
+    //minor bug, if you keep the button held and move over another button, that other button will show being pressed, but it wont do anything.
+    //I won't fix it, it is kinda fun to play with, although when every button has a function i don't think it will be easy to do it anymore.
+    if (mousePressed && !held && !scrolling && abs(mouseX - x) <= 75 && abs(mouseY - y) <= 35){
+      //this will trigger the action, and make sure the button won't activate anything else
       held = true;
       return title;
     } else return "false";
@@ -267,22 +278,16 @@ class button{
 }
 StringDict parseMeta(String path){  //parse through the metadata of the songs
   String[] loadedmap = loadStrings(path);
-  StringDict meta = new StringDict();
-  for (String item : loadedmap){
-    boolean keyDone = false;
-    String result = "";
-    for (int index = 0; index < item.length(); index++){
-      if (item.charAt(index) == ':' && keyDone );
-      result+= str(item.charAt(index));
-    }
-  }
   return null;
-} 
+}
 class song{ //stores song properties
   StringDict properties;
   song(String path){
   properties = new StringDict();
  // properties = parseMeta(path);
+  if (properties == null){
+    logs.append("<WARNING> Metadata for song was not loaded correctly");
+  }
   properties.set("path", path);
   }
   void display(int x, int y){
@@ -295,10 +300,14 @@ class song{ //stores song properties
   }
 }
 
-class note{
+class note{  //stores each notes properties
+  //what column it is on
   int column;
+  //where it is on the board
   int y;
+  //if it was successfully hit
   boolean success;
+  //if it is a held note
   int held;
   note(int where, int time, int stop){
     y = time;
@@ -307,10 +316,11 @@ class note{
     success = false;
   }
   void move(){
+    //moves the note down
     y--;
   }
   void art(){
-    
+    //draws the note
   }
 }
 
