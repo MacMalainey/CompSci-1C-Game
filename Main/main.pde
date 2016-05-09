@@ -1,5 +1,5 @@
 int cursor;  //yOffset
-int state; //game state
+gState state; //game state
 StringList logs = new StringList();
 PrintWriter logFile;
 ArrayList<note> notes = new ArrayList<note>(); //stores notes in game
@@ -10,11 +10,14 @@ ArrayList<button> GUI = new ArrayList<button>();//stores the buttons
 boolean[] keys =  new boolean[4];//holds the keys
 slist GUIlist;
 boolean scrolling;
+enum gState{
+  menu, main
+}
 void setup(){
   logFile = createWriter(sketchPath() + "/logs/Log " + str(day()) + " " + str(month()) + " " + str(year()) + ".log");
   size(750, 900);
   cursor = 0;
-  state = 0;
+  state = gState.menu;
   loadMainGUI();  //loads main menu GUI
   loadSongDirectories();  //loads the song directories from the bMapDir.list file
   scrolling = false;
@@ -109,7 +112,7 @@ void loadSongs(){  //loads songs in songs array
 void draw(){
   background(90,0, 90);
   switch (state){  //switch game state
-    case 0:  //main menu
+    case menu:  //main menu
     textSize(40);
     textAlign(CENTER);
     fill(255);
@@ -117,7 +120,7 @@ void draw(){
     GUIlist.display();
     GUIlist.selection();
     break;
-    case 1:  //game
+    case main:  //game
     for(note item : notes){
       item.move();
       item.art();
@@ -136,7 +139,7 @@ void draw(){
       case "back":
       logs.append("Heading back to main menu");
       loadMainGUI();
-      state = 0;
+      state = gState.menu;
       break;
     }
     item.art();
