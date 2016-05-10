@@ -1,30 +1,3 @@
-[Metadata]
-AudioFilename: bgm-4nm.mp3
-AudioLeadIn: 0
-PreviewTime: 9434
-Countdown: 0
-SampleSet: Soft
-StackLeniency: 0.4
-Mode: 3
-LetterboxInBreaks: 0
-DistanceSpacing: 1
-BeatDivisor: 4
-GridSize: 8
-Title:only my railgun (TV Size)
-TitleUnicode:only my railgun (TV Size)
-Artist:fripSide
-ArtistUnicode:fripSide
-Creator:DJPop
-Version:4K NM
-Source:To Aru Kagaku no Railgun
-Tags:SEiBiN mania
-BeatmapID:193129
-BeatmapSetID:63089
-0,0,"only my railgun (TV Size).jpg"
-Video,0,"only my railgun (TV Size).avi"
-3,100,0,0,0
-
-[Hitobjects]
 0,3350,-1
 0,3770,-1
 0,4189,-1

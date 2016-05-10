@@ -1,3 +1,5 @@
+import json
+
 beatmap = open('map.osu', 'r')  # change map.osu to file name
 
 readBeatmap = beatmap.read()
@@ -52,24 +54,26 @@ for notenum in range(0, len(hitobjects)):
 
     hitobjectsconverted.append(str(int(notex)) + ',' + str(int(time)) + ',' + str(int(noteType)))
 
-print ("Writing...")
+full = []
+dictionary = {}
+
+full.extend(general)
+full.extend(editor)
+full.extend(metadata)
+full.extend(difficulty)
+
+for i in range(0, len(full)):
+    buffer = full[i].split(':')
+    otherbuffer = buffer[1].replace(' ', '')
+    dictionary[buffer[0]] = otherbuffer
 
 # start writing to file
+print ("Writing...")
+
+with open('meta.json', 'w') as fp:
+    json.dump(dictionary, fp)
+
 output = open('map.bMap', 'w')
+for i in range(0, len(hitobjectsconverted)):
+    output.write(hitobjectsconverted[i] + '\n')
 
-# write metadata
-output.write("[Metadata]\n")
-for writebuffer in range(0, len(general)):
-    output.write(general[writebuffer] + "\n")
-for writebuffer in range(0, len(editor)):
-    output.write(editor[writebuffer] + "\n")
-for writebuffer in range(0, len(metadata)):
-    output.write(metadata[writebuffer] + "\n")
-for writebuffer in range(0, len(cleanevents)):
-    output.write(cleanevents[writebuffer] + "\n")
-
-# write hitobjects
-output.write("\n[Hitobjects]\n")
-for writebuffer in range(0, len(hitobjectsconverted)):
-    output.write(hitobjectsconverted[writebuffer] + "\n")
-output.close()
