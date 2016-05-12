@@ -15,8 +15,8 @@ void setup(){
   size(750, 900);
   cursor = 0;
   state = 0;
-  loadMainGUI();  //loads main menu GUI
   loadSongDirectories();  //loads the song directories from the bMapDir.list file
+  loadMainGUI();  //loads main menu GUI
   scrolling = false;
 }
 
@@ -204,9 +204,12 @@ class slist{
         if (item >= songsList.size()) break;
         song display = songsList.get(item);
         textAlign(LEFT, TOP);
-        fill(255);
         textSize(17);
-        text(display.returnPath(), 30, 150 + (62 * (item - scroll)));
+        if(display.returnError()){
+          fill(255, 0, 0);
+          text("CORRUPT FILE", 30, 170 + (62 * (item - scroll)));
+        } else fill(255);
+        text(display.returnName(), 30, 150 + (62 * (item - scroll)));
         textAlign(CENTER);
       }
     }
@@ -238,6 +241,10 @@ class slist{
        pressed = scroll + int((mouseY - 150)/62);
       }
     }
+  }
+  int returnItem(){
+    if(songsList.get(pressed).returnError()) return -1;
+    else return pressed;
   }
 }
 class button{
@@ -281,14 +288,20 @@ StringDict parseMeta(String path){  //parse through the metadata of the songs
   StringDict retV = new StringDict(); //Return value
   //retV.set("key", "info");
   if((new File(path.replace("map.bMap", "meta.json"))).exists()){
+  retV.set("ERROR","NULL");
   metadata = loadJSONObject(path.replace("map.bMap", "meta.json"));
-  
+  if (!(metadata.isNull("AudioFilename"))){  //this will first check if something exists.  If it doesn't, returns an error and song wont be playable
   retV.set("AudioFilename", metadata.getString("AudioFilename"));
-  retV.set("AudioLeadIn", metadata.getString("AudioLeadIn"));
-  retV.set("Title", metadata.getString("Title"));
-  retV.set("TitleUnicode", metadata.getString("TitleUnicode"));
+  } else retV.set("ERROR", "CORRUPT FILE");
+  if (metadata.isNull("AudioLeadIn")) retV.set("ERROR", "CORRUPT FILE");
+  else retV.set("AudioLeadIn", metadata.getString("AudioLeadIn"));
+  if (metadata.isNull("Title")) retV.set("ERROR", "CORRUPT FILE");
+  else retV.set("Title", metadata.getString("Title"));
+  if (metadata.isNull("Title")) retV.set("ERROR", "CORRUPT FILE");
+  else retV.set("TitleUnicode", metadata.getString("TitleUnicode"));
   } else {
     retV.set("ERROR", "meta.json not found");
+    return retV;
   }
   
   
@@ -298,8 +311,8 @@ class song{ //stores song properties
   StringDict properties;
   song(String path){
   properties = new StringDict();
- // properties = parseMeta(path);
-  if (properties == null){
+  properties = parseMeta(path);
+  if (!(properties.get("ERROR").equals("NULL"))){
     logs.append("<WARNING> Metadata for song was not loaded correctly");
   }
   properties.set("path", path);
@@ -311,6 +324,13 @@ class song{ //stores song properties
   }
   String returnPath(){
     return properties.get("path");
+  }
+  boolean returnError(){
+    if (properties.get("ERROR").equals("NULL")) return false;
+    else return true;
+  }
+  String returnName(){
+    return properties.get("Title");
   }
 }
 
