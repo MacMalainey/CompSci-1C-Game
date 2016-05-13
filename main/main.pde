@@ -9,6 +9,7 @@ ArrayList<File> songsDir = new ArrayList<File>();//stores folder files for direc
 ArrayList<button> GUI = new ArrayList<button>();//stores the buttons
 boolean[] keys =  new boolean[4];//holds the keys
 slist GUIlist;
+int changeState;
 boolean scrolling;
 void setup(){
   logFile = createWriter(sketchPath() + "/logs/Log " + str(day()) + " " + str(month()) + " " + str(year()) + ".log");
@@ -18,12 +19,42 @@ void setup(){
   loadSongDirectories();  //loads the song directories from the bMapDir.list file
   loadMainGUI();  //loads main menu GUI
   scrolling = false;
+  changeState = -1;
 }
-
+void initGame(){
+  spawnNotes();
+  loadPlayGUI();
+}
 void spawnNotes(){
-  //Iterate through song notes and make a class for each one
-  //Every note needs to be made in this format:
-  //notes.add(new note(int column, int time, int held);
+  int rounds = 0;
+  for(String item : loadStrings(songsList.get(GUIlist.returnItem()).returnPath())){
+    rounds++;
+    String result = "";
+    int count = 0;
+    int column = -1;
+    int time = -1;;
+    int held = -1;
+    for(int i2 = 0; i2 < item.length(); i2++){
+      if (item.charAt(i2) != ','){
+        result+= item.charAt(i2);
+      } else {
+        switch (count){
+          case 0:
+          column = int(result);
+          break;
+          case 1:
+          time = int(result);
+          break;
+          case 2:
+          held = int(result);
+          break;
+        }
+        count++;
+      }
+    }
+    notes.add(new note(column, time, held));
+  }
+  logs.append("Loaded " + str(rounds) + " notes");
 }
 
 void saveSongDirectories(){
@@ -69,6 +100,7 @@ void loadMainGUI(){ //creates GUI objects needed for the main screen
 
 void loadPlayGUI(){ //creates GUI objects needed for play screen
   GUI.clear();
+  GUI.add(new button(width - 100, height - 70, "back"));
 }
 
 void folderSelected(File selected){ //used for importing 
@@ -131,15 +163,28 @@ void draw(){
       selectFolder("Select folder containing beatmaps to import", "folderSelected");
       break;
       case "play":
-      logs.append("Starting game");
+      if (GUIlist.returnItem() > -1){
+        logs.append("Initiating game");
+        changeState = 1;
+      } else {
+        logs.append("Error with file selected, not starting game");
+      }
       break;
       case "back":
       logs.append("Heading back to main menu");
-      loadMainGUI();
-      state = 0;
+      changeState = 0;
       break;
     }
     item.art();
+  }
+  if (changeState == 1){
+      initGame();
+      state = 1;
+      changeState = -1;
+  } else if (changeState == 0){
+    state = 0;
+    loadMainGUI();
+    changeState = -1;
   }
   if(logs.size() > 0){  // if something is in the log print it
     logProcess(logs.array());
@@ -243,6 +288,7 @@ class slist{
     }
   }
   int returnItem(){
+    if(pressed == -1) return -1;
     if(songsList.get(pressed).returnError()) return -1;
     else return pressed;
   }
