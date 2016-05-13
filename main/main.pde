@@ -132,7 +132,7 @@ void loadSongs(){  //loads songs in songs array
         if (fileExt.equals("paMb")){  //The way im inputing to the string makes it backwards....  Whoops
           songsList.add(new song(it2.getAbsolutePath()));
           logs.append("LOADED BEATMAP: " + path);
-        }
+        } if (itemChar - 1< 0) break;
       }
     }
   }
@@ -283,7 +283,7 @@ class slist{
         }
       }  //list selection
       if (abs(270 - mouseX) <= 240 && abs(460 - mouseY)<= 310){
-       pressed = scroll + int((mouseY - 150)/62);
+       if (scroll + int((mouseY - 150)/62) < songsList.size())pressed = scroll + int((mouseY - 150)/62);
       }
     }
   }
