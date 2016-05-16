@@ -64,8 +64,11 @@ full.extend(difficulty)
 
 for i in range(0, len(full)):
     buffer = full[i].split(':')
+    oldfilename = dictionary['AudioFilename'][1]
     otherbuffer = buffer[1].replace(' ', '')
-    dictionary[buffer[0]] = otherbuffer
+    dictionary[buffer[0]] = buffer
+
+os.rename(oldfilename, oldfilename.replace(' ', ''));
 
 # start writing to file
 print ("Writing...")
