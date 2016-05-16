@@ -1,4 +1,10 @@
-int cursor;  //yOffset
+import ddf.minim.*;
+import ddf.minim.analysis.*;
+import ddf.minim.effects.*;
+import ddf.minim.signals.*;
+import ddf.minim.spi.*;
+import ddf.minim.ugens.*;
+
 int state; //game state
 StringList logs = new StringList();
 PrintWriter logFile;
@@ -14,17 +20,19 @@ boolean scrolling;
 void setup(){
   logFile = createWriter(sketchPath() + "/logs/Log " + str(day()) + " " + str(month()) + " " + str(year()) + ".log");
   size(750, 900);
-  cursor = 0;
   state = 0;
   loadSongDirectories();  //loads the song directories from the bMapDir.list file
   loadMainGUI();  //loads main menu GUI
-  scrolling = false;
-  changeState = -1;
+  scrolling = false;  //used for the scrolling bar
+  //it is to make sure that the scroll bar scrolls, but nothing else is being pressed.
+  changeState = -1;  //used to change the state
 }
+
 void initGame(){
   spawnNotes();
   loadPlayGUI();
 }
+
 void spawnNotes(){
   int rounds = 0;
   for(String item : loadStrings(songsList.get(GUIlist.returnItem()).returnPath())){
@@ -52,7 +60,7 @@ void spawnNotes(){
         count++;
       }
     }
-    notes.add(new note(column, time, held * -1));
+    notes.add(new note(column, time * -1, held * -1));
   }
   logs.append("Loaded " + str(rounds) + " notes");
 }
@@ -185,6 +193,7 @@ void draw(){
     state = 0;
     loadMainGUI();
     changeState = -1;
+    notes.clear();
   }
   if(logs.size() > 0){  // if something is in the log print it
     logProcess(logs.array());
@@ -404,6 +413,9 @@ class note{  //stores each notes properties
     stroke(255);
     line(0, y, 100, y);
     stroke(0);
+  }
+  void printY(){
+    println(y);
   }
 }
 
