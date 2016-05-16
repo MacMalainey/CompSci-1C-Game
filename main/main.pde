@@ -52,7 +52,7 @@ void spawnNotes(){
         count++;
       }
     }
-    notes.add(new note(column, time, held));
+    notes.add(new note(column, time, held * -1));
   }
   logs.append("Loaded " + str(rounds) + " notes");
 }
@@ -397,10 +397,13 @@ class note{  //stores each notes properties
   }
   void move(){
     //moves the note down
-    y--;
+    y++;
   }
   void art(){
     //draws the note
+    stroke(255);
+    line(0, y, 100, y);
+    stroke(0);
   }
 }
 
