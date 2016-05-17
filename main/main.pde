@@ -1,3 +1,11 @@
+// music playng stuff
+import ddf.minim.*;
+import ddf.minim.analysis.*;
+import ddf.minim.effects.*;
+import ddf.minim.signals.*;
+import ddf.minim.spi.*;
+import ddf.minim.ugens.*;
+
 int cursor;  //yOffset
 int state; //game state
 StringList logs = new StringList();
@@ -11,6 +19,10 @@ boolean[] keys =  new boolean[4];//holds the keys
 slist GUIlist;
 int changeState;
 boolean scrolling;
+// audio stuff
+Minim minim;
+AudioPlayer currentSong;
+
 void setup(){
   logFile = createWriter(sketchPath() + "/logs/Log " + str(day()) + " " + str(month()) + " " + str(year()) + ".log");
   size(750, 900);
@@ -18,13 +30,16 @@ void setup(){
   state = 0;
   loadSongDirectories();  //loads the song directories from the bMapDir.list file
   loadMainGUI();  //loads main menu GUI
+  minim = new Minim(this);  // init audio framework
   scrolling = false;
   changeState = -1;
 }
+
 void initGame(){
   spawnNotes();
   loadPlayGUI();
 }
+
 void spawnNotes(){
   int rounds = 0;
   for(String item : loadStrings(songsList.get(GUIlist.returnItem()).returnPath())){
@@ -150,10 +165,20 @@ void draw(){
     GUIlist.selection();
     break;
     case 1:  //game
+    // set line weight and color
     for(note item : notes){
       item.move();
       item.art();
     }
+    strokeWeight(16);
+    stroke(255);
+    // draw note separation lines
+    line(125, 0, 125, 900);
+    line(250, 0, 250, 900);
+    line(375, 0, 375, 900);
+    line(500, 0, 500, 900);
+    strokeWeight(1);
+    stroke(0);
     break;
   }
   for(button item : GUI){  //this will spawn the gui buttons
@@ -169,6 +194,7 @@ void draw(){
       } else {
         logs.append("Error with file selected, not starting game");
       }
+      
       break;
       case "back":
       logs.append("Heading back to main menu");
@@ -179,9 +205,15 @@ void draw(){
   }
   if (changeState == 1){
       initGame();
+      currentSong = minim.loadFile(songsList.get(GUIlist.returnItem()).returnPath().replace("map.bMap", songsList.get(GUIlist.returnItem()).returnAudio()));
       state = 1;
       changeState = -1;
+      currentSong.play();
   } else if (changeState == 0){
+    if (currentSong.isPlaying()) {
+      currentSong.pause();
+      currentSong.close();
+    }
     state = 0;
     loadMainGUI();
     changeState = -1;
@@ -377,6 +409,9 @@ class song{ //stores song properties
   }
   String returnName(){
     return properties.get("Title");
+  }
+  String returnAudio(){
+    return properties.get("AudioFilename");
   }
 }
 
