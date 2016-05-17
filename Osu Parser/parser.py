@@ -6,7 +6,7 @@ readBeatmap = beatmap.read()
 
 beatmaplist = readBeatmap.split('\n\n')  # split by empty lines
 
-print ("Parsing...")
+print("Parsing...")
 
 # find each section, split into individual lists
 general = [a for a in beatmaplist if "[General]" in a][0].splitlines()
@@ -71,7 +71,7 @@ for i in range(0, len(full)):
 os.rename(oldfilename, oldfilename.replace(' ', ''));
 
 # start writing to file
-print ("Writing...")
+print("Writing...")
 
 with open('meta.json', 'w') as fp:
     json.dump(dictionary, fp)
@@ -79,4 +79,3 @@ with open('meta.json', 'w') as fp:
 output = open('map.bMap', 'w')
 for i in range(0, len(hitobjectsconverted)):
     output.write(hitobjectsconverted[i] + '\n')
-
