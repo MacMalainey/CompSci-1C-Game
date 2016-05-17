@@ -5,7 +5,6 @@ import ddf.minim.effects.*;
 import ddf.minim.signals.*;
 import ddf.minim.spi.*;
 import ddf.minim.ugens.*;
-
 int state; //game state
 StringList logs = new StringList();
 PrintWriter logFile;
@@ -63,6 +62,7 @@ void spawnNotes(){
           held = int(result);
           break;
         }
+        result = "";
         count++;
       }
     }
@@ -165,19 +165,25 @@ void draw(){
     break;
     case 1:  //game
     // set line weight and color
-    for(note item : notes){
-      item.move();
-      item.art();
-    }
+    int yOffset = currentSong.position();
+    // draw critical zone
+    rectMode(CORNER);
+    fill(255, 132, 0);
+    rect(0, 800, 500, 100);
+    rectMode(CENTER);
+    // draw note separation lines
     strokeWeight(16);
     stroke(255);
-    // draw note separation lines
+    line(0, 0, 0, 900);
     line(125, 0, 125, 900);
     line(250, 0, 250, 900);
     line(375, 0, 375, 900);
     line(500, 0, 500, 900);
     strokeWeight(1);
     stroke(0);
+    for(note item : notes){
+      item.art(yOffset);
+    }
     break;
   }
   for(button item : GUI){  //this will spawn the gui buttons
@@ -425,23 +431,16 @@ class note{  //stores each notes properties
   //if it is a held note
   int held;
   note(int where, int time, int stop){
-    y = time;
+    y = time + 800;
     column = where;
     held = stop;
     success = false;
   }
-  void move(){
-    //moves the note down
-    y++;
-  }
-  void art(){
+  void art(int yOffset){
     //draws the note
     stroke(255);
-    line(0, y, 100, y);
+    line(column * 125, y + yOffset, (column * 125) + 125, y + yOffset);
     stroke(0);
-  }
-  void printY(){
-    println(y);
   }
 }
 
