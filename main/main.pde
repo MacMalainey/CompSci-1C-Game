@@ -5,6 +5,7 @@ import ddf.minim.effects.*;
 import ddf.minim.signals.*;
 import ddf.minim.spi.*;
 import ddf.minim.ugens.*;
+
 int state; //game state
 StringList logs = new StringList();
 PrintWriter logFile;
@@ -17,6 +18,8 @@ boolean[] keys =  new boolean[4];//holds the keys
 slist GUIlist;
 int changeState;
 boolean scrolling;
+// image background
+PImage background;
 // audio stuff
 Minim minim;
 AudioPlayer currentSong;
@@ -166,6 +169,8 @@ void draw(){
     case 1:  //game
     // set line weight and color
     int yOffset = currentSong.position();
+    // draw background
+    image(background, 0, 0, width, height);
     // draw critical zone
     rectMode(CORNER);
     fill(255, 132, 0);
@@ -211,6 +216,9 @@ void draw(){
   if (changeState == 1){
       initGame();
       currentSong = minim.loadFile(songsList.get(GUIlist.returnItem()).returnPath().replace("map.bMap", songsList.get(GUIlist.returnItem()).returnAudio()));
+      if (1 == 1) { // will replace this with real expression later
+        background = loadImage(songsList.get(GUIlist.returnItem()).returnPath().replace("map.bMap", "background.jpg"));
+      }
       state = 1;
       changeState = -1;
       currentSong.play();
