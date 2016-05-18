@@ -14,7 +14,7 @@ ArrayList<song> songsList = new ArrayList<song>();  //stores songs objects
 boolean held = false; //used to make sure mouseclicked commands dont repeat
 ArrayList<File> songsDir = new ArrayList<File>();//stores folder files for directory
 ArrayList<button> GUI = new ArrayList<button>();//stores the buttons
-boolean[] keys =  new boolean[4];//holds the keys
+keyState[] keys =  new keyState[4];//holds the keys
 slist GUIlist;
 int changeState;
 boolean scrolling;
@@ -23,7 +23,9 @@ PImage background;
 // audio stuff
 Minim minim;
 AudioPlayer currentSong;
-
+enum keyState{
+  off, pressed, held
+}
 void setup() {
   logFile = createWriter(sketchPath() + "/logs/Log " + str(day()) + " " + str(month()) + " " + str(year()) + ".log");
   size(750, 900);
@@ -484,29 +486,37 @@ void keyTyped() {  //PLEASE PROPERLY EXIT THE SKETCH BY PRESSING 't' IF YOU WANT
     logFile.flush();
     logFile.close();
     exit();
+  } else if (key == 'a') {
+    keys[0] = keyState.pressed;
+  } else if (key == 's') {
+    keys[1] = keyState.pressed;
+  } else if (key == 'l') {
+    keys[2] = keyState.pressed;
+  } else if (key == ';') {
+    keys[3] = keyState.pressed;
   }
 }
 
 void keyPressed() {
   if (key == 'a') {
-    keys[0] = true;
+    keys[0] = keyState.held;
   } else if (key == 's') {
-    keys[1] = true;
+    keys[1] = keyState.held;
   } else if (key == 'l') {
-    keys[2] = true;
+    keys[2] = keyState.held;
   } else if (key == ';') {
-    keys[3] = true;
+    keys[3] = keyState.held;
   }
 }
 
 void keyReleased() {
   if (key == 'a') {
-    keys[0] = false;
+    keys[0] = keyState.off;
   } else if (key == 's') {
-    keys[1] = false;
+    keys[1] = keyState.off;
   } else if (key == 'l') {
-    keys[2] = false;
+    keys[2] = keyState.off;
   } else if (key == ';') {
-    keys[3] = false;
+    keys[3] = keyState.off;
   }
 }
