@@ -1,6 +1,3 @@
-// video playing stuff
-import processing.video.*;
-
 // music playng stuff
 import ddf.minim.*;
 import ddf.minim.analysis.*;
@@ -23,8 +20,6 @@ int changeState;
 boolean scrolling;
 // image background
 PImage background;
-// video background
-Movie vbackground;
 // audio stuff
 Minim minim;
 AudioPlayer currentSong;
@@ -514,8 +509,4 @@ void keyReleased() {
   } else if (key == ';') {
     keys[3] = false;
   }
-}
-
-void movieEvent(Movie m) {
-  m.read();
 }
