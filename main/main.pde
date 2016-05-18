@@ -49,7 +49,6 @@ void spawnNotes() {
     int count = 0;
     int column = -1;
     int time = -1;
-    ;
     int held = -1;
     for (int i2 = 0; i2 < item.length(); i2++) {
       if (item.charAt(i2) != ',') {
@@ -62,15 +61,18 @@ void spawnNotes() {
         case 1:
           time = int(result);
           break;
-        case 2:
-          held = int(result);
-          break;
         }
         result = "";
         count++;
       }
     }
-    notes.add(new note(column, time * -1, held * -1));
+    if (count == 2) {
+      held = int(result);
+      notes.add(new note(column, time * -1, held * -1));
+    } else {
+      logs.append("Error loading note " + rounds);
+      rounds--;
+    }
   }
   logs.append("Loaded " + str(rounds) + " notes");
 }
@@ -403,10 +405,7 @@ StringDict parseMeta(String path) {  //parse through the metadata of the songs
     else retV.set("TitleUnicode", metadata.getString("TitleUnicode"));
   } else {
     retV.set("ERROR", "meta.json not found");
-    return retV;
   }
-
-
   return retV;
 }
 class song { //stores song properties
@@ -414,27 +413,33 @@ class song { //stores song properties
   song(String path) {
     properties = new StringDict();
     properties = parseMeta(path);
-    if (!(properties.get("ERROR").equals("NULL"))) {
-      logs.append("<WARNING> Metadata for song was not loaded correctly");
-    }
     properties.set("path", path);
-  }
-  void display(int x, int y) {
-    textAlign(LEFT);
-    text(properties.get("path"), x, y);
-    textAlign(CENTER);
+    if (!(properties.get("ERROR").equals("NULL"))) {
+      //logs if there was an error
+      logs.append("<WARNING> Metadata for song was not loaded correctly");
+    } else {
+      //checks if the audio file isn't there, if it is then it sets the class status to corrupt
+      if (!(new File(properties.get("path").replace("map.bMap", properties.get("AudioFilename"))).exists())) { 
+        properties.set("ERROR", "Audio file doesn't exist");
+        logs.append("<WARNING> The audio file " + properties.get("AudioFilename") + " does not exist for " + properties.get("path"));
+      }
+    }
   }
   String returnPath() {
     return properties.get("path");
+    //returns the path
   }
   boolean returnError() {
+    //returns if it ran into an error parsing
     if (properties.get("ERROR").equals("NULL")) return false;
     else return true;
   }
   String returnName() {
+    //returns the name of the song
     return properties.get("Title");
   }
   String returnAudio() {
+    //returns the name of the audio file
     return properties.get("AudioFilename");
   }
 }
@@ -448,7 +453,7 @@ class note {  //stores each notes properties
   boolean success;
   //if it is a held note
   int held;
-  note(int where, int time, int stop) {
+  note(int where, int time, int stop) {  //initializes the note
     y = time + 800;
     column = where;
     held = stop;
@@ -457,7 +462,12 @@ class note {  //stores each notes properties
   void art(int yOffset) {
     //draws the note
     stroke(255);
-    line(column * 125, y + yOffset, (column * 125) + 125, y + yOffset);
+    if (held == 1) line(column * 125, y + yOffset, (column * 125) + 125, y + yOffset);
+    else {
+      rectMode(CORNER);
+      rect(column * 125, y + yOffset, 125, abs(y) + held);
+      rectMode(CENTER);
+    }
     stroke(0);
   }
 }
