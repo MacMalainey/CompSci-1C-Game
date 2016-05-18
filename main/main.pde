@@ -8,15 +8,15 @@ import ddf.minim.ugens.*;
 
 int state; //game state
 StringList logs = new StringList();
-PrintWriter logFile;
+PrintWriter logFile;  //This object is used for logging
 ArrayList<note> notes = new ArrayList<note>(); //stores notes in game
 ArrayList<song> songsList = new ArrayList<song>();  //stores songs objects
 boolean held = false; //used to make sure mouseclicked commands dont repeat
 ArrayList<File> songsDir = new ArrayList<File>();//stores folder files for directory
 ArrayList<button> GUI = new ArrayList<button>();//stores the buttons
 keyState[] keys =  new keyState[4];//holds the keys
-slist GUIlist;
-int changeState;
+slist GUIlist;  //this object is used for selecting the song
+int changeState;  //used to change states
 boolean scrolling;
 // logo image
 PImage logo;
@@ -25,49 +25,44 @@ PImage background;
 // audio stuff
 Minim minim;
 AudioPlayer currentSong;
-enum keyState{
+enum keyState {  //enumator, just to make key states easy
   off, pressed, held
 }
 void setup() {
   logFile = createWriter(sketchPath() + "/logs/Log " + str(day()) + " " + str(month()) + " " + str(year()) + ".log");
   size(750, 900);
-  state = 0;
+  state = 0;  //starting state
   loadSongDirectories();  //loads the song directories from the bMapDir.list file
   loadMainGUI();  //loads main menu GUI
   minim = new Minim(this);  // init audio framework
-  changeState = -1;
+  changeState = -1;  //put change state into a state where it cant do anything
   scrolling = false;  //used for the scrolling bar
   //it is to make sure that the scroll bar scrolls, but nothing else is being pressed.
   logo = loadImage("assets/logo.png"); // load logo image
   logo.resize(1920/7, 891/7); // resize logo image
 }
 
-void initGame() {
-  spawnNotes();
-  loadPlayGUI();
+void initGame() {  //this initiates the game
+  spawnNotes(); //spawns the notes for the song
+  loadPlayGUI();  //loads the play button
 }
 
 void spawnNotes() {
-  int rounds = 0;
-  for (String item : loadStrings(songsList.get(GUIlist.returnItem()).returnPath())) {
+  int rounds = 0;  //used for debugging, just tells how many notes have been spawned
+  for (String item : loadStrings(songsList.get(GUIlist.returnItem()).returnPath())) {  //parses through each line
     rounds++;
-    String result = "";
-    int count = 0;
-    int column = -1;
+    String result = "";  //these variables are needed to parse through the stuff, this variable stores the current data
+    int count = 0;  //this tells what variable to write to
+    int column = -1;  //these store the data within the line
     int time = -1;
     int held = -1;
-    for (int i2 = 0; i2 < item.length(); i2++) {
-      if (item.charAt(i2) != ',') {
+    for (int i2 = 0; i2 < item.length(); i2++) {  //this parses throught the line
+      if (item.charAt(i2) != ',') {  //
         result+= item.charAt(i2);
       } else {
-        switch (count) {
-        case 0:
+        if (count == 0) {  //stores to each variable, changes which one it changes to
           column = int(result);
-          break;
-        case 1:
-          time = int(result);
-          break;
-        }
+        } else if (count == 1) time = int(result);
         result = "";
         count++;
       }
@@ -89,7 +84,7 @@ void saveSongDirectories() {
   for (File item : songsDir) {
     store.append(item.getAbsolutePath());
     logs.append("Adding directory: " + item.getAbsolutePath() + " to directory list");
-  }
+  }  //stores the directories in a file so the player doesnt have to look for it again
   saveStrings("bMapDir.list", store.array());
 }
 
@@ -106,12 +101,12 @@ void loadSongDirectories() { //loads through beatmap file, first checks if it ex
         logs.append("Song directory " + item + " does not exist");
       }
     }
-    if (changes) {
+    if (changes) {  //re writes song directores if there are changes
       logs.append("Re-writing song directory list, files listed have been altered");
       saveSongDirectories();
     }
   } else {
-    createWriter("bMapDir.list");
+    createWriter("bMapDir.list");  //creates the file
     logs.append("bMapDir.list not found, creating file");
   }
   loadSongs();  //loads the song objects
@@ -141,14 +136,14 @@ void folderSelected(File selected) { //used for importing
       logs.append("Added Directory: " + selected.getAbsolutePath());
       logs.append("Refreshing song list");
       loadSongs();
-    } else if (duplicates) {
+    } else {  //won't save if there is a duplicate
       logs.append("File: " + selected.getAbsolutePath() + " was already included in directory list");
     }
   } else logs.append("Import cancelled");
 }
 
 void loadSongs() {  //loads songs in songs array
-  songsList.clear();
+  songsList.clear();  //clears the songsList, this prevents duplicates
   for (File item : songsDir) {
     for (File it2 : item.listFiles()) {
       String fileExt = "";
@@ -159,7 +154,7 @@ void loadSongs() {  //loads songs in songs array
           songsList.add(new song(it2.getAbsolutePath()));
           logs.append("LOADED BEATMAP: " + path);
         } 
-        if (itemChar - 1< 0) break;
+        if (itemChar - 1< 0) break; //this will make sure the that the program doesnt extend past the length of the string
       }
     }
   }
@@ -211,9 +206,11 @@ void draw() {
     item.hover();
     switch(item.pressed()) {
     case "import":
+      //this ends imports files
       selectFolder("Select folder containing beatmaps to import", "folderSelected");
       break;
     case "play":
+      //this checks if there is a VALID file selected, and if there isnt one, it will start the game
       if (GUIlist.returnItem() > -1) {
         logs.append("Initiating game");
         changeState = 1;
@@ -223,6 +220,7 @@ void draw() {
 
       break;
     case "back":
+      //heads back to the main menu
       logs.append("Heading back to main menu");
       changeState = 0;
       break;
@@ -230,6 +228,7 @@ void draw() {
     item.art();
   }
   if (changeState == 1) {
+    //this starts the game
     initGame();
     currentSong = minim.loadFile(songsList.get(GUIlist.returnItem()).returnPath().replace("map.bMap", songsList.get(GUIlist.returnItem()).returnAudio()));
     if (new File(songsList.get(GUIlist.returnItem()).returnPath().replace("map.bMap", "background.jpg")).exists()) { // check for background image
@@ -240,6 +239,7 @@ void draw() {
     changeState = -1;
     currentSong.play();
   } else if (changeState == 0) {
+    //this goes back to the main menu
     if (currentSong.isPlaying()) {
       currentSong.pause();
       currentSong.close();
@@ -309,11 +309,11 @@ class slist {
     }
     if (songsList.size() > 0) {  //displays song names
       for (int item = scroll; item < scroll + 10; item++) {
-        if (item >= songsList.size()) break;
+        if (item >= songsList.size()) break;  //in case the song list is smaller than ten, it will break the for loop
         song display = songsList.get(item);
         textAlign(LEFT, TOP);
         textSize(17);
-        if (display.returnError()) {
+        if (display.returnError()) {  //this will display if the song is corrupt
           fill(255, 0, 0);
           text("CORRUPT FILE", 30, 170 + (62 * (item - scroll)));
         } else fill(255);
@@ -351,7 +351,7 @@ class slist {
       }
     }
   }
-  int returnItem() {
+  int returnItem() {  //returns the current item pressed
     if (pressed == -1) return -1;
     if (songsList.get(pressed).returnError()) return -1;
     else return pressed;
@@ -469,7 +469,7 @@ class note {  //stores each notes properties
     //draws the note
     stroke(255);
     if (held == 1) line(column * 125, y + yOffset, (column * 125) + 125, y + yOffset);
-    else {
+    else {  //draws held notes
       rectMode(CORNER);
       rect(column * 125, y + yOffset, 125, abs(y) + held);
       rectMode(CENTER);
@@ -481,7 +481,7 @@ class note {  //stores each notes properties
 void logProcess(String[] output) { //prints out logs to a file every loop
   for (String item : output) {
     logFile.println("[" + str(hour()) + ":" + str(minute()) + ":" + str(second()) + "]: " + item);
-    println(item);
+    println(item);  //i also want it to print to the console
   }
 }
 
@@ -490,6 +490,7 @@ void keyTyped() {  //PLEASE PROPERLY EXIT THE SKETCH BY PRESSING 't' IF YOU WANT
     logFile.flush();
     logFile.close();
     exit();
+    //used to register quick button presses
   } else if (key == 'a') {
     keys[0] = keyState.pressed;
   } else if (key == 's') {
@@ -502,6 +503,7 @@ void keyTyped() {  //PLEASE PROPERLY EXIT THE SKETCH BY PRESSING 't' IF YOU WANT
 }
 
 void keyPressed() {
+  //checks for held presses
   if (key == 'a') {
     keys[0] = keyState.held;
   } else if (key == 's') {
@@ -514,6 +516,7 @@ void keyPressed() {
 }
 
 void keyReleased() {
+  //tells when the key is no longer being held
   if (key == 'a') {
     keys[0] = keyState.off;
   } else if (key == 's') {
