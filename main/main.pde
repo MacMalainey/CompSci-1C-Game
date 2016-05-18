@@ -1,3 +1,6 @@
+// video playing stuff
+import processing.video.*;
+
 // music playng stuff
 import ddf.minim.*;
 import ddf.minim.analysis.*;
@@ -20,6 +23,8 @@ int changeState;
 boolean scrolling;
 // image background
 PImage background;
+// video background
+Movie vbackground;
 // audio stuff
 Minim minim;
 AudioPlayer currentSong;
@@ -226,9 +231,9 @@ void draw() {
   if (changeState == 1) {
     initGame();
     currentSong = minim.loadFile(songsList.get(GUIlist.returnItem()).returnPath().replace("map.bMap", songsList.get(GUIlist.returnItem()).returnAudio()));
-    if (1 == 1) { // will replace this with real expression later
+    if (new File(songsList.get(GUIlist.returnItem()).returnPath().replace("map.bMap", "background.jpg")).exists()) { // check for background image
       background = loadImage(songsList.get(GUIlist.returnItem()).returnPath().replace("map.bMap", "background.jpg"));
-      background.resize(750, 900);
+      background.resize(width, height);
     }
     state = 1;
     changeState = -1;
@@ -509,4 +514,8 @@ void keyReleased() {
   } else if (key == ';') {
     keys[3] = false;
   }
+}
+
+void movieEvent(Movie m) {
+  m.read();
 }
