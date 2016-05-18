@@ -18,6 +18,8 @@ keyState[] keys =  new keyState[4];//holds the keys
 slist GUIlist;
 int changeState;
 boolean scrolling;
+// logo image
+PImage logo;
 // image background
 PImage background;
 // audio stuff
@@ -36,6 +38,8 @@ void setup() {
   changeState = -1;
   scrolling = false;  //used for the scrolling bar
   //it is to make sure that the scroll bar scrolls, but nothing else is being pressed.
+  logo = loadImage("assets/logo.png"); // load logo image
+  logo.resize(1920/7, 891/7); // resize logo image
 }
 
 void initGame() {
@@ -168,7 +172,7 @@ void draw() {
     textSize(40);
     textAlign(CENTER);
     fill(255);
-    text("COMPSCI 1C RHYTHM BEAT", width/2, 50);
+    image(logo, 240, 15);
     GUIlist.display();
     GUIlist.selection();
     break;
