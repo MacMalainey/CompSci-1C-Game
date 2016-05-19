@@ -6,6 +6,7 @@ import ddf.minim.signals.*;
 import ddf.minim.spi.*;
 import ddf.minim.ugens.*;
 
+IntList critContain; //this will store notes that are in the critical zone, and what column they are in
 int state; //game state
 StringList logs = new StringList();
 PrintWriter logFile;  //This object is used for logging
@@ -41,6 +42,7 @@ void setup() {
   //it is to make sure that the scroll bar scrolls, but nothing else is being pressed.
   logo = loadImage("assets/logo.png"); // load logo image
   logo.resize(1920/7, 891/7); // resize logo image
+  critContain = new IntList();
 }
 
 void initGame() {  //this initiates the game
@@ -174,7 +176,7 @@ void draw() {
     break;
   case 1:  //game
     // set line weight and color
-    int yOffset = currentSong.position();
+    int cursor = currentSong.position();
     // draw background
     background(background);
     // fix rectangles
@@ -199,7 +201,8 @@ void draw() {
     // write out framerate
     text(frameRate, 700, 20);
     for (note item : notes) {
-      item.art(yOffset);
+      item.art(cursor);
+      item.hitDetect(cursor);
     }
     break;
   }
@@ -460,6 +463,9 @@ class note {  //stores each notes properties
   boolean success;
   //if it is a held note
   int held;
+  //used in checking if it is in the critical zone
+  boolean inCrit;
+  String index;  //Cause of stupid stuff when dealing with hit objects
   note(int where, int time, int stop) {  //initializes the note
     y = time + 800;
     column = where;
@@ -476,6 +482,16 @@ class note {  //stores each notes properties
       rectMode(CENTER);
     }
     stroke(0);
+  }
+  void hitDetect(int yOffset){
+    //this isn't ready yet, so for the preview I have removed it
+    /*if (y + yOffset > 800 && y + yOffset < 900){
+      if (!inCrit){
+        inCrit = true;
+        critContain.append(column);
+      }
+    } else if(inCrit){
+    }*/
   }
 }
 
