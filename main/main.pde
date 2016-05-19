@@ -28,6 +28,7 @@ AudioPlayer currentSong;
 enum keyState {  //enumator, just to make key states easy
   off, pressed, held
 }
+
 void setup() {
   logFile = createWriter(sketchPath() + "/logs/Log " + str(day()) + " " + str(month()) + " " + str(year()) + ".log");
   size(750, 900);
