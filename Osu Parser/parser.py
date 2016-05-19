@@ -1,3 +1,4 @@
+import os
 import json
 
 beatmap = open('map.osu', 'r')  # change map.osu to file name
@@ -55,6 +56,7 @@ for notenum in range(0, len(hitobjects)):
     hitobjectsconverted.append(str(int(notex)) + ',' + str(int(time)) + ',' + str(int(noteType)))
 
 full = []
+tempdictionary = {}
 dictionary = {}
 
 full.extend(general)
@@ -64,11 +66,16 @@ full.extend(difficulty)
 
 for i in range(0, len(full)):
     buffer = full[i].split(':')
-    oldfilename = dictionary['AudioFilename'][1]
+    tempdictionary[buffer[0]] = buffer
+    oldfilename = tempdictionary['AudioFilename'][1]
     otherbuffer = buffer[1].replace(' ', '')
-    dictionary[buffer[0]] = buffer
+    dictionary[buffer[0]] = otherbuffer
 
-os.rename(oldfilename, oldfilename.replace(' ', ''));
+
+try:
+    os.rename(oldfilename[1:], oldfilename.replace(' ', ''));
+except:
+    print("Cannot find audio file.")
 
 # start writing to file
 print("Writing...")
