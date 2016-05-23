@@ -5,8 +5,11 @@ import ddf.minim.effects.*;
 import ddf.minim.signals.*;
 import ddf.minim.spi.*;
 import ddf.minim.ugens.*;
-
-IntList critContain; //this will store notes that are in the critical zone, and what column they are in
+String[] data;
+//0: Total notes, 1: Notes that were hit, 2: Presses that missed a note
+boolean stored;
+int badHits;
+IntDict critContain; //this will store notes that are in the critical zone, and what column they are in
 int state; //game state
 StringList logs = new StringList();
 PrintWriter logFile;  //This object is used for logging
@@ -26,11 +29,24 @@ PImage background;
 // audio stuff
 Minim minim;
 AudioPlayer currentSong;
+
 enum keyState {  //enumator, just to make key states easy
   off, pressed, held
 }
-
+String scoreFind(){
+  String returnVal = str(int(float(data[1]) / float(data[0]) * 10000));
+  returnVal = str(int(returnVal) - (int(data[2]) * 10));
+  if (int(returnVal) < 0) return "Wow, you really suck at this game....   You got " + returnVal;  //if you got a negative score....
+  else if (int(float(data[1]) / float(data[0])) == 1 && int(data[2]) == 0) return "PERFECT GAME!";  //returns if it was a perfect game
+  else return "You got " + returnVal;  //returns if regular score though
+}
 void setup() {
+  data = new String[4];
+  for (int item = 0; item < data.length; item++){
+    data[item] = "0";
+  }
+  stored = false;
+  badHits = 0;
   logFile = createWriter(sketchPath() + "/logs/Log " + str(day()) + " " + str(month()) + " " + str(year()) + ".log");
   size(750, 900);
   state = 0;  //starting state
@@ -42,14 +58,13 @@ void setup() {
   //it is to make sure that the scroll bar scrolls, but nothing else is being pressed.
   logo = loadImage("assets/logo.png"); // load logo image
   logo.resize(1920/7, 891/7); // resize logo image
-  critContain = new IntList();
+  critContain = new IntDict();
 }
 
 void initGame() {  //this initiates the game
   spawnNotes(); //spawns the notes for the song
   loadPlayGUI();  //loads the play button
 }
-
 void spawnNotes() {
   int rounds = 0;  //used for debugging, just tells how many notes have been spawned
   for (String item : loadStrings(songsList.get(GUIlist.returnItem()).returnPath())) {  //parses through each line
@@ -72,7 +87,7 @@ void spawnNotes() {
     }
     if (count == 2) {
       held = int(result);
-      notes.add(new note(column, time * -1, held * -1));
+      notes.add(new note(column, time * -1, held * -1, str(rounds)));
     } else {
       logs.append("Error loading note " + rounds);
       rounds--;
@@ -176,33 +191,52 @@ void draw() {
     break;
   case 1:  //game
     // set line weight and color
-    int cursor = currentSong.position();
-    // draw background
-    background(background);
-    // fix rectangles
-    rectMode(CORNER);
-    // draw translucent backdrop
-    fill(0, 0, 0, 191); // 75% opacity
-    rect(0, 0, 500, 900);
-    // draw critical zone
-    fill(255, 132, 0);
-    rect(0, 800, 500, 100);
-    rectMode(CENTER);
-    // draw note separation lines
-    strokeWeight(16);
-    stroke(255);
-    line(0, 0, 0, 900);
-    line(125, 0, 125, 900);
-    line(250, 0, 250, 900);
-    line(375, 0, 375, 900);
-    line(500, 0, 500, 900);
-    strokeWeight(1);
-    stroke(0);
-    // write out framerate
-    text(frameRate, 700, 20);
-    for (note item : notes) {
-      item.art(cursor);
-      item.hitDetect(cursor);
+    if (currentSong.isPlaying()){
+      int cursor = currentSong.position();
+      // draw background
+      background(background);
+      // fix rectangles
+      rectMode(CORNER);
+      // draw translucent backdrop
+      fill(0, 0, 0, 191); // 75% opacity
+      rect(0, 0, 500, 900);
+      // draw critical zone
+      fill(255, 132, 0);
+      rect(0, 800, 500, 100);
+      rectMode(CENTER);
+      // draw note separation lines
+      strokeWeight(16);
+      stroke(255);
+      line(0, 0, 0, 900);
+      line(125, 0, 125, 900);
+      line(250, 0, 250, 900);
+      line(375, 0, 375, 900);
+      line(500, 0, 500, 900);
+      strokeWeight(1);
+      stroke(0);
+      // write out framerate
+      text(frameRate, 700, 20);
+      for (note item : notes) {
+        item.art(cursor);
+        item.hitDetect(cursor);
+      }
+    } else if (stored) {
+      background(0);
+      fill(255);
+      textSize(20);
+      text("Fail hits: " + data[2] + " x -10", width/2, 50);
+      text("Successful Notes (" + data[1] + ") / total notes (" + data[0] + ") x 10000", width/2, 25);
+      textSize(20);
+      text("RESULT: \n" + data[3], width/2, 100);
+    } else {
+      data[0] = str(notes.size());
+      int good = 0;
+      for(note item : notes){
+        if (item.success) good++;
+      }
+      data[1] = str(good);  //Notes that were hit
+      data[3] = scoreFind();
+      stored = true;
     }
     break;
   }
@@ -221,7 +255,6 @@ void draw() {
       } else {
         logs.append("Error with file selected, not starting game");
       }
-
       break;
     case "back":
       //heads back to the main menu
@@ -239,6 +272,11 @@ void draw() {
       background = loadImage(songsList.get(GUIlist.returnItem()).returnPath().replace("map.bMap", "background.jpg"));
       background.resize(width, height);
     }
+    data = new String[4];
+    for (int item = 0; item < data.length; item++){
+      data[item] = "0";
+    }
+    stored = false;
     state = 1;
     changeState = -1;
     currentSong.play();
@@ -260,6 +298,23 @@ void draw() {
   if (!mousePressed && (held || scrolling)) {  //used to check if a button is being pressed, but it won't activate multiple times.  Whereas it needs to be different with the scroll bar
     held = false;
     scrolling = false;
+  }
+  if (!stored){
+    for (int item = 0; item < keys.length; item++){
+      if (keys[item] == keyState.pressed || keys[item] == keyState.held) {
+        boolean found = false;
+        for (int it2 : critContain.values()){
+          if (item == it2){
+            found = true;
+            break;
+          }
+        }
+        if (!found){
+          data[2] = str(int(data[2]) + 1);
+        }
+      }
+      if (keys[item] == keyState.pressed) keys[item] = keyState.off;
+    }
   }
 }
 class slist {
@@ -454,7 +509,7 @@ class song { //stores song properties
   }
 }
 
-class note {  //stores each notes properties
+class note {  //stores each notes properties   //I was an idiot, i didnt make a subclass (but I'm to lazy to change it)
   //what column it is on
   int column;
   //where it is on the board
@@ -465,33 +520,59 @@ class note {  //stores each notes properties
   int held;
   //used in checking if it is in the critical zone
   boolean inCrit;
-  String index;  //Cause of stupid stuff when dealing with hit objects
-  note(int where, int time, int stop) {  //initializes the note
-    y = time + 800;
+  //This will be used to tell where the key was initially held
+  int keyHeld;
+  String ID;  //this will be used for dealing the the critContain dictionary
+  note(int where, int time, int stop, String id) {  //initializes the note
+    ID = id;
+    y = time;
     column = where;
     held = stop;
     success = false;
+    keyHeld = -1;
   }
   void art(int yOffset) {
     //draws the note
+    strokeWeight(8);
+    if(success){
+      stroke(0, 255, 0);
+    } else if (inCrit){
+      stroke(0);
+    } else if (keyHeld != -1){
+      fill(0, 0, 255);
+    } else {
     stroke(255);
-    if (held == 1) line(column * 125, y + yOffset, (column * 125) + 125, y + yOffset);
+    }
+    if (held == 1) line(column * 125, y + yOffset + 800, (column * 125) + 125, y + yOffset + 800);
     else {  //draws held notes
       rectMode(CORNER);
-      rect(column * 125, y + yOffset, 125, abs(y) + held);
+      rect(column * 125, y + yOffset + 800, 125, abs(y) + held);
       rectMode(CENTER);
     }
     stroke(0);
+    strokeWeight(1);
   }
   void hitDetect(int yOffset){
-    //this isn't ready yet, so for the preview I have removed it
-    /*if (y + yOffset > 800 && y + yOffset < 900){
+    if (((y + yOffset > 0 && y + yOffset < 100 && held == 1) || (y + yOffset > 0 && yOffset + held < 100 && held != 1)) && !success){
       if (!inCrit){
         inCrit = true;
-        critContain.append(column);
+        critContain.set(ID, column);
       }
+      if (held == 1){
+        if (keys[column] == keyState.pressed || keys[column]  == keyState.held){
+          success = true;
+        }
+     } else if (keyHeld == -1 && keys[column] != keyState.off){
+       keyHeld = currentSong.position();
+     } else if (keys[column] == keyState.off || held + yOffset >= 100){
+       success = (float(keyHeld) / float(abs(abs(y) + held)) >= 0.8) ? true : false;
+       keyHeld = -1;
+     }
     } else if(inCrit){
-    }*/
+      if (held != 1 && success) println("IT WORKED");
+      inCrit = false;
+      critContain.remove(ID);
+    }
   }
 }
 
