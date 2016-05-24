@@ -33,8 +33,8 @@ AudioPlayer currentSong;
 enum keyState {  //enumator, just to make key states easy
   off, pressed, held
 }
-String scoreFind() {
-  String returnVal = str(int(float(data[1]) / float(data[0]) * 10000));
+String scoreFind(){
+  String returnVal = str(float(data[1]) / float(data[0]) * 10000);
   returnVal = str(int(returnVal) - (int(data[2]) * 10));
   if (int(returnVal) < 0) return "Wow, you really suck at this game....   You got " + returnVal;  //if you got a negative score....
   else if (int(float(data[1]) / float(data[0])) == 1 && int(data[2]) == 0) return "PERFECT GAME!";  //returns if it was a perfect game
@@ -217,9 +217,11 @@ void draw() {
       stroke(0);
       // write out framerate
       text(frameRate, 700, 20);
-      for (note item : notes) {
-        item.art(cursor);
-        item.hitDetect(cursor);
+      if (currentSong.position() > int(songsList.get(GUIlist.returnItem()).properties.get("AudioLeadIn"))) {
+        for (note item : notes) {
+          item.art(cursor);
+          item.hitDetect(cursor);
+        }
       }
     } else if (stored) {
       background(0);
