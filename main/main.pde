@@ -1,4 +1,4 @@
-// music playng stuff
+// music playng stuff //<>//
 import ddf.minim.*;
 import ddf.minim.analysis.*;
 import ddf.minim.effects.*;
@@ -33,7 +33,7 @@ AudioPlayer currentSong;
 enum keyState {  //enumator, just to make key states easy
   off, pressed, held
 }
-String scoreFind(){
+String scoreFind() {
   String returnVal = str(int(float(data[1]) / float(data[0]) * 10000));
   returnVal = str(int(returnVal) - (int(data[2]) * 10));
   if (int(returnVal) < 0) return "Wow, you really suck at this game....   You got " + returnVal;  //if you got a negative score....
@@ -42,7 +42,7 @@ String scoreFind(){
 }
 void setup() {
   data = new String[4];
-  for (int item = 0; item < data.length; item++){
+  for (int item = 0; item < data.length; item++) {
     data[item] = "0";
   }
   stored = false;
@@ -87,7 +87,8 @@ void spawnNotes() {
     }
     if (count == 2) {
       held = int(result);
-      notes.add(new note(column, time * -1, held * -1, str(rounds)));
+      if (held == -1) notes.add(new note(column, time * -1, str(rounds)));
+      else notes.add(new heldNote(column, time * -1, str(rounds), held));
     } else {
       logs.append("Error loading note " + rounds);
       rounds--;
@@ -191,7 +192,7 @@ void draw() {
     break;
   case 1:  //game
     // set line weight and color
-    if (currentSong.isPlaying()){
+    if (currentSong.isPlaying()) {
       int cursor = currentSong.position();
       // draw background
       background(background);
@@ -231,7 +232,7 @@ void draw() {
     } else {
       data[0] = str(notes.size());
       int good = 0;
-      for(note item : notes){
+      for (note item : notes) {
         if (item.success) good++;
       }
       data[1] = str(good);  //Notes that were hit
@@ -273,7 +274,7 @@ void draw() {
       background.resize(width, height);
     }
     data = new String[4];
-    for (int item = 0; item < data.length; item++){
+    for (int item = 0; item < data.length; item++) {
       data[item] = "0";
     }
     stored = false;
@@ -299,17 +300,17 @@ void draw() {
     held = false;
     scrolling = false;
   }
-  if (!stored){
-    for (int item = 0; item < keys.length; item++){
+  if (!stored) {
+    for (int item = 0; item < keys.length; item++) {
       if (keys[item] == keyState.pressed || keys[item] == keyState.held) {
         boolean found = false;
-        for (int it2 : critContain.values()){
-          if (item == it2){
+        for (int it2 : critContain.values()) {
+          if (item == it2) {
             found = true;
             break;
           }
         }
-        if (!found){
+        if (!found) {
           data[2] = str(int(data[2]) + 1);
         }
       }
@@ -516,63 +517,51 @@ class note {  //stores each notes properties   //I was an idiot, i didnt make a 
   int y;
   //if it was successfully hit
   boolean success;
-  //if it is a held note
-  int held;
   //used in checking if it is in the critical zone
   boolean inCrit;
-  //This will be used to tell where the key was initially held
-  int keyHeld;
   String ID;  //this will be used for dealing the the critContain dictionary
-  note(int where, int time, int stop, String id) {  //initializes the note
+  note(int where, int time, String id) {  //initializes the note
     ID = id;
     y = time;
     column = where;
-    held = stop;
     success = false;
-    keyHeld = -1;
   }
   void art(int yOffset) {
     //draws the note
     strokeWeight(8);
-    if(success){
+    if (success) {
       stroke(0, 255, 0);
-    } else if (inCrit){
+    } else if (inCrit) {
       stroke(0);
-    } else if (keyHeld != -1){
-      fill(0, 0, 255);
     } else {
-    stroke(255);
+      stroke(255);
     }
-    if (held == 1) line(column * 125, y + yOffset + 800, (column * 125) + 125, y + yOffset + 800);
-    else {  //draws held notes
-      rectMode(CORNER);
-      rect(column * 125, y + yOffset + 800, 125, abs(y) + held);
-      rectMode(CENTER);
-    }
+    line(column * 125, y + yOffset + 800, (column * 125) + 125, y + yOffset + 800);  //draws held notes
     stroke(0);
     strokeWeight(1);
   }
-  void hitDetect(int yOffset){
-    if (((y + yOffset > 0 && y + yOffset < 100 && held == 1) || (y + yOffset > 0 && yOffset + held < 100 && held != 1)) && !success){
-      if (!inCrit){
-        inCrit = true;
-        critContain.set(ID, column);
-      }
-      if (held == 1){
-        if (keys[column] == keyState.pressed || keys[column]  == keyState.held){
+  void hitDetect(int yOffset) {
+    if (y + yOffset > 0 && y + yOffset < 100) {
+      //if (held != 1) println("hi");
+      if (!success) {  //need a nested if statement or hit detection and registering bad hits will get really screwy...
+        if (!inCrit) {
+          inCrit = true;
+          critContain.set(ID, column);
+        }
+        if (keys[column] == keyState.pressed || keys[column] == keyState.held) {
           success = true;
         }
-     } else if (keyHeld == -1 && keys[column] != keyState.off){
-       keyHeld = currentSong.position();
-     } else if (keys[column] == keyState.off || held + yOffset >= 100){
-       success = (float(keyHeld) / float(abs(abs(y) + held)) >= 0.8) ? true : false;
-       keyHeld = -1;
-     }
-    } else if(inCrit){
-      if (held != 1 && success) println("IT WORKED");
+      }
+    } else if (inCrit) {
       inCrit = false;
       critContain.remove(ID);
     }
+  }
+}
+
+class heldNote extends note {
+  heldNote(int where, int time, String ID, int held) {
+    super(where, time, ID);
   }
 }
 
@@ -582,24 +571,14 @@ void logProcess(String[] output) { //prints out logs to a file every loop
     println(item);  //i also want it to print to the console
   }
 }
-
-void keyTyped() {  //PLEASE PROPERLY EXIT THE SKETCH BY PRESSING 't' IF YOU WANT THE DEBUG TO APPEAR PROPERLY
-  if (key == 't') {
-    logFile.flush();
-    logFile.close();
-    exit();
-    //used to register quick button presses
-  } else if (key == 'a') {
-    keys[0] = keyState.pressed;
-  } else if (key == 's') {
-    keys[1] = keyState.pressed;
-  } else if (key == 'l') {
-    keys[2] = keyState.pressed;
-  } else if (key == ';') {
-    keys[3] = keyState.pressed;
+class keyObj {
+  int timer;
+  boolean value;
+  keyObj() {
+    timer = -1;
+    value = false;
   }
 }
-
 void keyPressed() {
   //checks for held presses
   if (key == 'a') {
