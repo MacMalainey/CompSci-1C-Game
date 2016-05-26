@@ -17,7 +17,7 @@ ArrayList<song> songsList = new ArrayList<song>();  //stores songs objects
 boolean held = false; //used to make sure mouseclicked commands dont repeat
 ArrayList<File> songsDir = new ArrayList<File>();//stores folder files for directory
 ArrayList<button> GUI = new ArrayList<button>();//stores the buttons
-keyState[] keys =  new keyState[4];//holds the keys
+keyObj[] keys =  new keyObj[4];//holds the keys
 slist GUIlist;  //this object is used for selecting the song
 int changeState;  //used to change states
 boolean scrolling;
@@ -29,10 +29,7 @@ PImage background;
 Minim minim;
 AudioPlayer currentSong;
 
-enum keyState {  //enumator, just to make key states easy
-  off, pressed, held
-}
-String scoreFind(){
+String scoreFind() {
   String returnVal = str(float(data[1]) / float(data[0]) * 10000);
   returnVal = str(int(returnVal) - (int(data[2]) * 10));
   if (int(returnVal) < 0) return "Wow, you really suck at this game....   You got " + returnVal;  //if you got a negative score....
@@ -43,6 +40,9 @@ void setup() {
   data = new String[4];
   for (int item = 0; item < data.length; item++) {
     data[item] = "0";
+  }
+  for (int item = 0; item < keys.length; item++) {
+    keys[item] = new keyObj(item);
   }
   stored = false;
   badHits = 0;
@@ -226,7 +226,7 @@ void draw() {
       background(0);
       fill(255);
       textSize(20);
-      text("Fail hits: " + data[2] + " x -10", width/2, 50);
+      text("Empty hits: " + data[2] + " x -10", width/2, 50);
       text("Successful Notes (" + data[1] + ") / total notes (" + data[0] + ") x 10000", width/2, 25);
       textSize(20);
       text("RESULT: \n" + data[3], width/2, 100);
@@ -300,23 +300,6 @@ void draw() {
   if (!mousePressed && (held || scrolling)) {  //used to check if a button is being pressed, but it won't activate multiple times.  Whereas it needs to be different with the scroll bar
     held = false;
     scrolling = false;
-  }
-  if (!stored) {
-    for (int item = 0; item < keys.length; item++) {
-      if (keys[item] == keyState.pressed || keys[item] == keyState.held) {
-        boolean found = false;
-        for (int it2 : critContain.values()) {
-          if (item == it2) {
-            found = true;
-            break;
-          }
-        }
-        if (!found) {
-          data[2] = str(int(data[2]) + 1);
-        }
-      }
-      if (keys[item] == keyState.pressed) keys[item] = keyState.off;
-    }
   }
 }
 class slist {
@@ -543,13 +526,12 @@ class note {  //stores each notes properties   //I was an idiot, i didnt make a 
   }
   void hitDetect(int yOffset) {
     if (y + yOffset > 0 && y + yOffset < 100) {
-      //if (held != 1) println("hi");
       if (!success) {  //need a nested if statement or hit detection and registering bad hits will get really screwy...
         if (!inCrit) {
           inCrit = true;
           critContain.set(ID, column);
         }
-        if (keys[column] == keyState.pressed || keys[column] == keyState.held) {
+        if (keys[column].value) {
           success = true;
         }
       }
@@ -561,8 +543,55 @@ class note {  //stores each notes properties   //I was an idiot, i didnt make a 
 }
 
 class heldNote extends note {
+  int heldTo;
+  int keyHeld;
   heldNote(int where, int time, String ID, int held) {
     super(where, time, ID);
+    heldTo = held * -1;
+    keyHeld = -1;
+  }
+  void art(int yOffset) {
+    strokeWeight(3);
+    rectMode(CORNER);
+    if (!inCrit)stroke(255);
+    else stroke(0);
+    if (keyHeld != -1) fill(0, 0, 255);
+    else fill(255, 132, 0);
+    rect(column * 125, 800 + y + yOffset, 125, heldTo - y);
+    stroke(0);
+    rectMode(CENTER);
+    strokeWeight(1);
+  }
+  void hitDetect(int yOffset) {
+    if (y + yOffset > 0 && heldTo + yOffset < 100) {
+      if (!success) {  //need a nested if statement or hit detection and registering bad hits will get really screwy...
+        if (!inCrit) {
+          inCrit = true;
+          critContain.set(ID, column);
+        }
+        if (keys[column].value && keyHeld == -1) {
+          keyHeld = currentSong.position();
+        } else if (keyHeld != -1 && !keys[column].value) {
+          if ((float((currentSong.position()) - keyHeld) / float((heldTo * -1) + y)) > 0.85) {
+            success = true; 
+            println("success");
+          }
+          keyHeld = -1;
+        }
+      }
+    } else if (inCrit) {
+      inCrit = false;
+      critContain.remove(ID);
+      if (keyHeld != -1) {
+        //println((heldTo * -1) - keyHeld);
+        //  println((heldTo * -1) + y);
+        if ((float((heldTo * -1) - keyHeld) / float((heldTo * -1) + y)) > 0.85) {
+          success = true; 
+          println("success");
+        }
+        keyHeld = -1;
+      }
+    }
   }
 }
 
@@ -575,33 +604,48 @@ void logProcess(String[] output) { //prints out logs to a file every loop
 class keyObj {
   int timer;
   boolean value;
-  keyObj() {
-    timer = -1;
+  private int ID;  //private because I don't want to screw it up
+  keyObj(int item) {
+    timer = millis();
     value = false;
+    ID = item;
+  }
+  void requestOn() {
+    checkIfNotes();
+    value = true;
+  }
+  void checkIfNotes() {
+    for (int item : critContain.values()) {
+      if (item == ID) return;
+    }
+    if (millis() - timer > 120) {
+      data[2] = str(int(data[2]) + 1);
+      timer = millis();
+    }
   }
 }
 void keyPressed() {
   //checks for held presses
   if (key == 'a') {
-    keys[0] = keyState.held;
+    keys[0].requestOn();
   } else if (key == 's') {
-    keys[1] = keyState.held;
+    keys[1].requestOn();
   } else if (key == 'l') {
-    keys[2] = keyState.held;
+    keys[2].requestOn();
   } else if (key == ';') {
-    keys[3] = keyState.held;
+    keys[3].requestOn();
   }
 }
 
 void keyReleased() {
   //tells when the key is no longer being held
   if (key == 'a') {
-    keys[0] = keyState.off;
+    keys[0].value = false;
   } else if (key == 's') {
-    keys[1] = keyState.off;
+    keys[1].value = false;
   } else if (key == 'l') {
-    keys[2] = keyState.off;
+    keys[2].value = false;
   } else if (key == ';') {
-    keys[3] = keyState.off;
+    keys[3].value = false;
   }
 }
