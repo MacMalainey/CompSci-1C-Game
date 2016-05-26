@@ -5,10 +5,13 @@ import ddf.minim.effects.*;
 import ddf.minim.signals.*;
 import ddf.minim.spi.*;
 import ddf.minim.ugens.*;
+
+boolean autoPilot;  //used to check if the autoPilot is running
+auto autoP;
 String[] data;
 //0: Total notes, 1: Notes that were hit, 2: Presses that missed a note
-boolean stored;
-int badHits;
+boolean stored;  //used to tell if the data array has been filled
+int badHits;  //how many hits where there was no notes in the field
 IntDict critContain; //this will store notes that are in the critical zone, and what column they are in
 int state; //game state
 StringList logs = new StringList();
@@ -30,7 +33,7 @@ PImage background;
 Minim minim;
 AudioPlayer currentSong;
 
-String scoreFind() {
+String scoreFind() {  //this determines the score and returns a message with it, the message changes based on your score.
   String returnVal = str(float(data[1]) / float(data[0]) * 10000);
   returnVal = str(int(returnVal) - (int(data[2]) * 10));
   if (int(returnVal) < 0) return "Wow, you really suck at this game....   You got " + returnVal;  //if you got a negative score....
@@ -38,12 +41,9 @@ String scoreFind() {
   else return "You got " + returnVal;  //returns if regular score though
 }
 void setup() {
-  data = new String[4];
-  for (int item = 0; item < data.length; item++) {
-    data[item] = "0";
-  }
+  autoP = new auto();
   for (int item = 0; item < keys.length; item++) {
-    keys[item] = new keyObj(item);
+    keys[item] = new keyObj(item);//inits keyObj array
   }
   stored = false;
   badHits = 0;
@@ -66,31 +66,38 @@ void initGame() {  //this initiates the game
   loadPlayGUI();  //loads the play button
 }
 void spawnNotes() {
-  int rounds = 0;  //used for debugging, just tells how many notes have been spawned
+  int rounds = 0;  //used for giving the notes an ID
   for (String item : loadStrings(songsList.get(GUIlist.returnItem()).returnPath())) {  //parses through each line
     rounds++;
     String result = "";  //these variables are needed to parse through the stuff, this variable stores the current data
     int count = 0;  //this tells what variable to write to
-    int column = -1;  //these store the data within the line
+    //these store the data within the line
+    int column = -1;  
     int time = -1;
     int held = -1;
-    for (int i2 = 0; i2 < item.length(); i2++) {  //this parses throught the line
-      if (item.charAt(i2) != ',') {  //
-        result+= item.charAt(i2);
-      } else {
-        if (count == 0) {  //stores to each variable, changes which one it changes to
-          column = int(result);
-        } else if (count == 1) time = int(result);
-        result = "";
-        count++;
+    try {  //if one of the numbers has something other than a number in it, this statement will catch error so it doesn't crash the game.
+      for (int i2 = 0; i2 < item.length(); i2++) {  //this parses through the line
+        if (item.charAt(i2) != ',') {  //
+          result+= item.charAt(i2);
+        } else {
+          if (count == 0) {  //stores to each variable, changes which one it changes to
+            column = int(result);
+          } else if (count == 1) time = int(result);
+          result = "";
+          count++;
+        }
       }
-    }
-    if (count == 2) {
-      held = int(result);
-      if (held == -1) notes.add(new note(column, time * -1, str(rounds)));
-      else notes.add(new heldNote(column, time * -1, str(rounds), held));
-    } else {
-      logs.append("Error loading note " + rounds);
+      if (count == 2) {  //stores to the last variable, if it was formatted correctly.
+        held = int(result);
+        if (held == -1) notes.add(new note(column, time * -1, str(rounds)));
+        else notes.add(new heldNote(column, time * -1, str(rounds), held));
+      } else {  //this is also another way to check if the line wasn't formatted correctly
+        logs.append("Error loading note " + str(rounds));
+        rounds--;
+      }
+    } 
+    catch (NumberFormatException e) {
+      logs.append("Error loading note " + str(rounds));
       rounds--;
     }
   }
@@ -135,12 +142,14 @@ void loadMainGUI() { //creates GUI objects needed for the main screen
   GUI.clear();
   GUI.add(new button(width - 100, height - 70, "import"));
   GUI.add(new button(width - 100, height - 200, "play"));
+  GUI.add(new button(width - 100, height - 330, "auto pilot"));
   GUIlist = new slist();
 }
 
 void loadPlayGUI() { //creates GUI objects needed for play screen
   GUI.clear();
   GUI.add(new button(width - 100, height - 70, "back"));
+  //maybe I could add a pause button????
 }
 
 void folderSelected(File selected) { //used for importing 
@@ -193,6 +202,7 @@ void draw() {
   case 1:  //game
     // set line weight and color
     if (currentSong.isPlaying()) {
+      if (autoPilot) autoP.run();
       int cursor = currentSong.position();
       // draw background
       background(background);
@@ -215,15 +225,14 @@ void draw() {
       line(500, 0, 500, 900);
       strokeWeight(1);
       stroke(0);
-      // write out framerate
-      text(frameRate, 700, 20);
+      //animate notes
       if (currentSong.position() > int(songsList.get(GUIlist.returnItem()).properties.get("AudioLeadIn"))) {
         for (note item : notes) {
           item.art(cursor);
           item.hitDetect(cursor);
         }
       }
-    } else if (stored) {
+    } else if (stored) {  //this will happen if the data has been stored.
       background(0);
       fill(255);
       textSize(20);
@@ -231,31 +240,37 @@ void draw() {
       text("Successful Notes (" + data[1] + ") / total notes (" + data[0] + ") x 10000", width/2, 25);
       textSize(20);
       text("RESULT: \n" + data[3], width/2, 100);
-    } else {
-      data[0] = str(notes.size());
+    } else {//this will store the data in the data array
+      data[0] = str(notes.size());  //how many notes were there
       int good = 0;
       for (note item : notes) {
         if (item.success) good++;
       }
       data[1] = str(good);  //Notes that were hit
-      data[3] = scoreFind();
+      data[3] = scoreFind();  //score
       stored = true;
     }
     break;
   }
-  for (button item : GUI) {  //this will spawn the gui buttons
-    item.hover();
-    switch(item.pressed()) {
+  for (button item : GUI) {  //this will animate the gui buttons, and is used for if it is pressed
+    item.hover();  //checks if the mouse is hovering over the button
+    switch(item.pressed()) {  //this will tell if a button was pressed 
     case "import":
       //this ends imports files
       selectFolder("Select folder containing beatmaps to import", "folderSelected");
       break;
+    case "auto pilot":
+      //this will run autopilot mode
+      autoPilot = true;
     case "play":
       //this checks if there is a VALID file selected, and if there isnt one, it will start the game
       if (GUIlist.returnItem() > -1) {
         logs.append("Initiating game");
-        changeState = 1;
+        changeState = 1;  //Changes the state to play the game
       } else {
+        if(autoPilot){
+          autoPilot = false;
+        }
         logs.append("Error with file selected, not starting game");
       }
       break;
@@ -263,9 +278,10 @@ void draw() {
       //heads back to the main menu
       logs.append("Heading back to main menu");
       changeState = 0;
+      autoPilot = false;
       break;
     }
-    item.art();
+    item.art();  //this draws the button
   }
   if (changeState == 1) {
     //this starts the game
@@ -275,7 +291,7 @@ void draw() {
       background = loadImage(songsList.get(GUIlist.returnItem()).returnPath().replace("map.bMap", "background.jpg"));
       background.resize(width, height);
     }
-    data = new String[4];
+    data = new String[4];  //inits the data array
     for (int item = 0; item < data.length; item++) {
       data[item] = "0";
     }
@@ -290,7 +306,7 @@ void draw() {
       currentSong.close();
     }
     state = 0;
-    loadMainGUI();
+    loadMainGUI();  //loads the main menu GUI
     changeState = -1;
     notes.clear();
   }
@@ -397,8 +413,8 @@ class slist {
     }
   }
   int returnItem() {  //returns the current item pressed
-    if (pressed == -1) return -1;
-    if (songsList.get(pressed).returnError()) return -1;
+    if (pressed == -1 ||songsList.get(pressed).returnError()) return -1;  //this only works because I am using the logical OR statement
+    //in other words, the songsList.get(pressed).returnError() won't run if pressed = -1.  Because the logical OR statement evaluates the first one, and if that is true, it won't evaluate the next thing.
     else return pressed;
   }
 }
@@ -430,12 +446,12 @@ class button {
   String pressed() {  //check if it has been pressed
     if (mousePressed && abs(mouseX - x) <= 75 && abs(mouseY - y) <= 35 && !scrolling) cProp = color(100, 100, 255);  //well show that the button is being pressed
     //minor bug, if you keep the button held and move over another button, that other button will show being pressed, but it wont do anything.
-    //I won't fix it, it is kinda fun to play with, although when every button has a function i don't think it will be easy to do it anymore.
+    //I won't fix it, it is kinda fun to play with.  And the bug isn't to noticable, and kinda hard to activate
     if (mousePressed && !held && !scrolling && abs(mouseX - x) <= 75 && abs(mouseY - y) <= 35) {
       //this will trigger the action, and make sure the button won't activate anything else
       held = true;
       return title;
-    } else return "false";
+    } else return "false";  //this won't do anything
   }
 }
 StringDict parseMeta(String path) {  //parse through the metadata of the songs
@@ -461,7 +477,7 @@ StringDict parseMeta(String path) {  //parse through the metadata of the songs
 }
 class song { //stores song properties
   StringDict properties;
-  song(String path) {
+  song(String path) {  //this gets the properties
     properties = new StringDict();
     properties = parseMeta(path);
     properties.set("path", path);
@@ -528,54 +544,53 @@ class note {  //stores each notes properties   //I was an idiot, i didnt make a 
   void hitDetect(int yOffset) {
     if (y + yOffset > 0 && y + yOffset < 100) {
       if (!success) {  //need a nested if statement or hit detection and registering bad hits will get really screwy...
-        if (!inCrit) {
+        if (!inCrit) {  //this will set the button to make sure it is in the critical zone, but it won't keep overwriting it
           inCrit = true;
           critContain.set(ID, column);
-        }
+        }//checks for a success
         if (keys[column].value) {
           success = true;
         }
       }
-    } else if (inCrit) {
+    } else if (inCrit) { //makes sure it still doesn't think it is in the critical zone
       inCrit = false;
       critContain.remove(ID);
     }
   }
 }
 
-class heldNote extends note {
+class heldNote extends note {  //HELD NOTES
   int heldTo;
   int keyHeld;
-  heldNote(int where, int time, String ID, int held) {
+  heldNote(int where, int time, String ID, int held) {//initializes the class
     super(where, time, ID);
     heldTo = held * -1;
     keyHeld = -1;
   }
-  void art(int yOffset) {
+  void art(int yOffset) {  //draws the note
     strokeWeight(3);
     rectMode(CORNER);
     if (!inCrit)stroke(255);
     else stroke(0);
-    if (keyHeld != -1) fill(0, 0, 255);
+    if (keyHeld != -1) fill(0, 0, 255);  //so not every note is blue
     else fill(255, 132, 0);
     rect(column * 125, 800 + y + yOffset, 125, heldTo - y);
     stroke(0);
     rectMode(CENTER);
     strokeWeight(1);
   }
-  void hitDetect(int yOffset) {
+  void hitDetect(int yOffset) {  //hit detection is different for these notes
     if (y + yOffset > 0 && heldTo + yOffset < 100) {
       if (!success) {  //need a nested if statement or hit detection and registering bad hits will get really screwy...
-        if (!inCrit) {
+        if (!inCrit) {//this will set the button to make sure it is in the critical zone, but it won't keep overwriting it
           inCrit = true;
           critContain.set(ID, column);
         }
-        if (keys[column].value && keyHeld == -1) {
+        if (keys[column].value && keyHeld == -1) {//start of the note being "held"
           keyHeld = currentSong.position();
-        } else if (keyHeld != -1 && !keys[column].value) {
+        } else if (keyHeld != -1 && !keys[column].value) {  //this is to check if the note is a success after the player let go of it
           if ((float((currentSong.position()) - keyHeld) / float((heldTo * -1) + y)) > 0.85) {
-            success = true; 
-            println("success");
+            success = true;
           }
           keyHeld = -1;
         }
@@ -583,12 +598,9 @@ class heldNote extends note {
     } else if (inCrit) {
       inCrit = false;
       critContain.remove(ID);
-      if (keyHeld != -1) {
-        //println((heldTo * -1) - keyHeld);
-        //  println((heldTo * -1) + y);
+      if (keyHeld != -1) {  //this will also check to see if the note was a success
         if ((float((heldTo * -1) - keyHeld) / float((heldTo * -1) + y)) > 0.85) {
-          success = true; 
-          println("success");
+          success = true;
         }
         keyHeld = -1;
       }
@@ -602,7 +614,7 @@ void logProcess(String[] output) { //prints out logs to a file every loop
     println(item);  //i also want it to print to the console
   }
 }
-class keyObj {
+class keyObj {  //this is for registering key hits
   int timer;
   boolean value;
   private int ID;  //private because I don't want to screw it up
@@ -611,30 +623,43 @@ class keyObj {
     value = false;
     ID = item;
   }
-  void requestOn() {
+  void requestOn() {  //turns value on
     checkIfNotes();
-    value = true;
+    if (!value) value = true;
   }
-  void checkIfNotes() {
-    for (int item : critContain.values()) {
+  void checkIfNotes() {  //checks if the there needs to be a penalty for a missed note
+    for (int item : critContain.values()) {  //if there is a note in the critical zone, it is good
       if (item == ID) return;
     }
-    if (millis() - timer > 120) {
+    if (millis() - timer > 120) {//the average key press is around 120 ms so this registers based on the average key press time whether there have been multiple presses.  (or it could be a long held one)
       data[2] = str(int(data[2]) + 1);
       timer = millis();
     }
   }
 }
+
 void keyPressed() {
   //checks for held presses
-  if (key == 'a') {
-    keys[0].requestOn();
-  } else if (key == 's') {
-    keys[1].requestOn();
-  } else if (key == 'l') {
-    keys[2].requestOn();
-  } else if (key == ';') {
-    keys[3].requestOn();
+  if (!autoPilot && state == 1) {  //will only work if autopilot is off, and the game is running
+    if (key == 'a') {
+      keys[0].requestOn();
+    } else if (key == 's') {
+      keys[1].requestOn();
+    } else if (key == 'l') {
+      keys[2].requestOn();
+    } else if (key == ';') {
+      keys[3].requestOn();
+    }
+  }
+}
+
+class auto{
+  void run(){
+    for (int item : critContain.values()){
+      if (!keys[item].value){
+        keys[item].requestOn();
+      }
+    }
   }
 }
 
