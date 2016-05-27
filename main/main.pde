@@ -6,6 +6,7 @@ import ddf.minim.signals.*;
 import ddf.minim.spi.*;
 import ddf.minim.ugens.*;
 
+boolean isPaused;  //used to tell fit the game was manually paused.
 boolean autoPilot;  //used to check if the autoPilot is running
 auto autoP;
 String[] data;
@@ -41,6 +42,7 @@ String scoreFind() {  //this determines the score and returns a message with it,
   else return "You got " + returnVal;  //returns if regular score though
 }
 void setup() {
+  isPaused = false;
   autoP = new auto();
   for (int item = 0; item < keys.length; item++) {
     keys[item] = new keyObj(item);//inits keyObj array
@@ -149,7 +151,7 @@ void loadMainGUI() { //creates GUI objects needed for the main screen
 void loadPlayGUI() { //creates GUI objects needed for play screen
   GUI.clear();
   GUI.add(new button(width - 100, height - 70, "back"));
-  //maybe I could add a pause button????
+  GUI.add(new button(width - 100, height - 200, "play/pause"));
 }
 
 void folderSelected(File selected) { //used for importing 
@@ -201,9 +203,8 @@ void draw() {
     break;
   case 1:  //game
     // set line weight and color
-    if (currentSong.isPlaying()) {
-      if (autoPilot) autoP.run();
-      int cursor = currentSong.position();
+    if (currentSong.isPlaying() || isPaused) {
+
       // draw background
       background(background);
       // fix rectangles
@@ -225,14 +226,26 @@ void draw() {
       line(500, 0, 500, 900);
       strokeWeight(1);
       stroke(0);
+      if (isPaused) {  //changes the screen the color of the screen except the buttons if it is paused
+        fill(0, 171);
+        strokeWeight(0);
+        rect(0, 0, width * 2, height * 2);  //This for some reason dealing with the width and height only returns half of the width and height
+        strokeWeight(1);
+        textSize(100);
+        fill(255);
+        text("PAUSED", width/2, 100);
+      }
       //animate notes
-      if (currentSong.position() > int(songsList.get(GUIlist.returnItem()).properties.get("AudioLeadIn"))) {
+      //will only work if it isn't paused
+      if (currentSong.isPlaying()) {  //left the note artwork out if is drawn on purpose, then people can't cheat
+        if (autoPilot) autoP.run();  //runs autopilot
+        int cursor = currentSong.position();
         for (note item : notes) {
           item.art(cursor);
           item.hitDetect(cursor);
         }
       }
-    } else if (stored) {  //this will happen if the data has been stored.
+    } else if (stored && !isPaused) {  //this will happen if the end game data has been stored.
       background(0);
       fill(255);
       textSize(20);
@@ -240,7 +253,8 @@ void draw() {
       text("Successful Notes (" + data[1] + ") / total notes (" + data[0] + ") x 10000", width/2, 25);
       textSize(20);
       text("RESULT: \n" + data[3], width/2, 100);
-    } else {//this will store the data in the data array
+    } else if (!isPaused) {//this will store the data in the data array
+      GUI.remove(1);
       data[0] = str(notes.size());  //how many notes were there
       int good = 0;
       for (note item : notes) {
@@ -259,6 +273,15 @@ void draw() {
       //this ends imports files
       selectFolder("Select folder containing beatmaps to import", "folderSelected");
       break;
+    case "play/pause":
+      //this pauses the game and the song
+      if (currentSong.isPlaying()) {
+        currentSong.pause();
+      } else {
+        currentSong.play();
+      }
+      isPaused = !isPaused;
+      break;
     case "auto pilot":
       //this will run autopilot mode
       autoPilot = true;
@@ -268,7 +291,7 @@ void draw() {
         logs.append("Initiating game");
         changeState = 1;  //Changes the state to play the game
       } else {
-        if(autoPilot){
+        if (autoPilot) {
           autoPilot = false;
         }
         logs.append("Error with file selected, not starting game");
@@ -279,6 +302,7 @@ void draw() {
       logs.append("Heading back to main menu");
       changeState = 0;
       autoPilot = false;
+      isPaused = false;
       break;
     }
     item.art();  //this draws the button
@@ -511,7 +535,7 @@ class song { //stores song properties
   }
 }
 
-class note {  //stores each notes properties   //I was an idiot, i didnt make a subclass (but I'm to lazy to change it)
+class note {  //stores each notes properties
   //what column it is on
   int column;
   //where it is on the board
@@ -614,33 +638,37 @@ void logProcess(String[] output) { //prints out logs to a file every loop
     println(item);  //i also want it to print to the console
   }
 }
+
 class keyObj {  //this is for registering key hits
   int timer;
   boolean value;
   private int ID;  //private because I don't want to screw it up
   keyObj(int item) {
-    timer = millis();
+    timer = -1;
     value = false;
     ID = item;
   }
   void requestOn() {  //turns value on
-    checkIfNotes();
-    if (!value) value = true;
+    if (millis() - timer > 100) { //makes sure there is a time penalty if the hit is a miss
+      if (checkIfNotes()) {
+        value = true;
+      } else {
+        data[2] = str(int(data[2]) + 1);  //adds to the missed hits score
+        timer = millis();  //re-inits the timer
+      }
+    }
   }
-  void checkIfNotes() {  //checks if the there needs to be a penalty for a missed note
+  boolean checkIfNotes() {  //checks if the there needs to be a penalty for a missed note
     for (int item : critContain.values()) {  //if there is a note in the critical zone, it is good
-      if (item == ID) return;
+      if (item == ID) return true;
     }
-    if (millis() - timer > 120) {//the average key press is around 120 ms so this registers based on the average key press time whether there have been multiple presses.  (or it could be a long held one)
-      data[2] = str(int(data[2]) + 1);
-      timer = millis();
-    }
+    return false;
   }
 }
 
 void keyPressed() {
   //checks for held presses
-  if (!autoPilot && state == 1) {  //will only work if autopilot is off, and the game is running
+  if (!autoPilot && state == 1 && currentSong.isPlaying()) {  //will only work if autopilot is off, and the game is running
     if (key == 'a') {
       keys[0].requestOn();
     } else if (key == 's') {
@@ -653,10 +681,10 @@ void keyPressed() {
   }
 }
 
-class auto{
-  void run(){
-    for (int item : critContain.values()){
-      if (!keys[item].value){
+class auto {//plays the game perfectly
+  void run() {
+    for (int item : critContain.values()) {
+      if (!keys[item].value) {
         keys[item].requestOn();
       }
     }
