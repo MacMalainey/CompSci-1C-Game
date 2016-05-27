@@ -5,7 +5,7 @@ import ddf.minim.effects.*;
 import ddf.minim.signals.*;
 import ddf.minim.spi.*;
 import ddf.minim.ugens.*;
-
+int timePause;  //used for a pause timer
 boolean isPaused;  //used to tell fit the game was manually paused.
 boolean autoPilot;  //used to check if the autoPilot is running
 auto autoP;
@@ -42,6 +42,7 @@ String scoreFind() {  //this determines the score and returns a message with it,
   else return "You got " + returnVal;  //returns if regular score though
 }
 void setup() {
+  timePause = -1;
   isPaused = false;
   autoP = new auto();
   for (int item = 0; item < keys.length; item++) {
@@ -203,7 +204,7 @@ void draw() {
     break;
   case 1:  //game
     // set line weight and color
-    if (currentSong.isPlaying() || isPaused) {
+    if (currentSong.isPlaying() || isPaused || timePause != -1) {
 
       // draw background
       background(background);
@@ -234,15 +235,27 @@ void draw() {
         textSize(100);
         fill(255);
         text("PAUSED", width/2, 100);
+      } else if (millis() - timePause < 3000 && timePause != -1) {  //pause screen
+        fill(0, 171);
+        strokeWeight(0);
+        rect(0, 0, width * 2, height * 2);  //This for some reason dealing with the width and height only returns half of the width and height
+        strokeWeight(1);
+        textSize(100);
+        fill(255);
+        textSize(100);
+        text(str(int((3000 - (millis() - timePause))/1000)), width/2, height/2);
+      } else if (millis() - timePause > 3000) {  //countdown to start
+        timePause = -1; 
+        currentSong.play();
       }
       //animate notes
       //will only work if it isn't paused
-      if (currentSong.isPlaying()) {  //left the note artwork out if is drawn on purpose, then people can't cheat
-        if (autoPilot) autoP.run();  //runs autopilot
+      if (currentSong.isPlaying() || timePause != -1) {  //left the note artwork out if is drawn on purpose, then people can't cheat
+        if (millis() - timePause > 3000 && autoPilot) autoP.run();  //runs autopilot
         int cursor = currentSong.position();
         for (note item : notes) {
           item.art(cursor);
-          item.hitDetect(cursor);
+          if (timePause == -1 ) item.hitDetect(cursor);
         }
       }
     } else if (stored && !isPaused) {  //this will happen if the end game data has been stored.
@@ -278,7 +291,7 @@ void draw() {
       if (currentSong.isPlaying()) {
         currentSong.pause();
       } else {
-        currentSong.play();
+        timePause = millis();
       }
       isPaused = !isPaused;
       break;
@@ -319,6 +332,7 @@ void draw() {
     for (int item = 0; item < data.length; item++) {
       data[item] = "0";
     }
+    timePause = -1;
     stored = false;
     state = 1;
     changeState = -1;
