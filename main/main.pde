@@ -1,4 +1,7 @@
-// music playng stuff //<>//
+// video playing stuff //<>//
+import processing.video.*;
+
+// music playng stuff
 import ddf.minim.*;
 import ddf.minim.analysis.*;
 import ddf.minim.signals.*;
@@ -25,6 +28,8 @@ boolean scrolling;
 PImage logo;
 // image background
 PImage background;
+// video background
+Movie backgroundv;
 // audio stuff
 Minim minim;
 AudioPlayer currentSong;
@@ -194,7 +199,7 @@ void draw() {
     if (currentSong.isPlaying()) {
       int cursor = currentSong.position();
       // draw background
-      background(background);
+      background(backgroundv);
       // fix rectangles
       rectMode(CORNER);
       // draw translucent backdrop
@@ -270,7 +275,11 @@ void draw() {
     //this starts the game
     initGame();
     currentSong = minim.loadFile(songsList.get(GUIlist.returnItem()).returnPath().replace("map.bMap", songsList.get(GUIlist.returnItem()).returnAudio()));
-    if (new File(songsList.get(GUIlist.returnItem()).returnPath().replace("map.bMap", "background.jpg")).exists()) { // check for background image
+    if (new File(songsList.get(GUIlist.returnItem()).returnPath().replace("map.bMap", "backgroundv.avi")).exists()) { // check for background image
+      backgroundv = new Movie(this, songsList.get(GUIlist.returnItem()).returnPath().replace("map.bMap", "backgroundv.avi"));
+      backgroundv.play();
+      backgroundv.resize(width, height);
+    } else if (new File(songsList.get(GUIlist.returnItem()).returnPath().replace("map.bMap", "background.jpg")).exists()) { // check for background image
       background = loadImage(songsList.get(GUIlist.returnItem()).returnPath().replace("map.bMap", "background.jpg"));
       background.resize(width, height);
     }
@@ -648,4 +657,8 @@ void keyReleased() {
   } else if (key == ';') {
     keys[3].value = false;
   }
+}
+
+void movieEvent(Movie m) {
+  m.read();
 }
