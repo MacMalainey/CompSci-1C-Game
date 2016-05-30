@@ -211,7 +211,7 @@ void draw() {
     if (currentSong.isPlaying() || isPaused || timePause != -1) {
 
       // draw background
-      background(backgroundv);
+      background(background);
       // fix rectangles
       rectMode(CORNER);
       // draw translucent backdrop
@@ -251,6 +251,7 @@ void draw() {
       } else if (millis() - timePause > 3000) {  //countdown to start
         timePause = -1; 
         currentSong.play();
+        backgroundv.play();
       }
       //animate notes
       //will only work if it isn't paused
@@ -293,6 +294,7 @@ void draw() {
     case "play/pause":
       //this pauses the game and the song
       if (currentSong.isPlaying()) {
+        backgroundv.pause();
         currentSong.pause();
       } else {
         timePause = millis();
@@ -331,7 +333,7 @@ void draw() {
     if (new File(songsList.get(GUIlist.returnItem()).returnPath().replace("map.bMap", "backgroundv.avi")).exists()) { // check for background image
       backgroundv = new Movie(this, songsList.get(GUIlist.returnItem()).returnPath().replace("map.bMap", "backgroundv.avi"));
       backgroundv.play();
-      backgroundv.resize(width, height);
+      background = backgroundv;
     } else if (new File(songsList.get(GUIlist.returnItem()).returnPath().replace("map.bMap", "background.jpg")).exists()) { // check for background image
       background = loadImage(songsList.get(GUIlist.returnItem()).returnPath().replace("map.bMap", "background.jpg"));
       background.resize(width, height);
