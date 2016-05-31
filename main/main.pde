@@ -34,6 +34,8 @@ PImage logo;
 PImage background;
 // video background
 Movie backgroundv;
+// is the background a video?
+boolean isVideo;
 // audio stuff
 Minim minim;
 AudioPlayer currentSong;
@@ -251,7 +253,7 @@ void draw() {
       } else if (millis() - timePause > 3000) {  //countdown to start
         timePause = -1; 
         currentSong.play();
-        backgroundv.play();
+        if (isVideo) backgroundv.play();
       }
       //animate notes
       //will only work if it isn't paused
@@ -294,7 +296,7 @@ void draw() {
     case "play/pause":
       //this pauses the game and the song
       if (currentSong.isPlaying()) {
-        backgroundv.pause();
+        if (isVideo) backgroundv.pause();
         currentSong.pause();
       } else {
         timePause = millis();
@@ -332,10 +334,12 @@ void draw() {
     currentSong = minim.loadFile(songsList.get(GUIlist.returnItem()).returnPath().replace("map.bMap", songsList.get(GUIlist.returnItem()).returnAudio()));
     if (new File(songsList.get(GUIlist.returnItem()).returnPath().replace("map.bMap", "backgroundv.avi")).exists()) { // check for background image
       backgroundv = new Movie(this, songsList.get(GUIlist.returnItem()).returnPath().replace("map.bMap", "backgroundv.avi"));
+      isVideo = true;
       backgroundv.play();
       background = backgroundv;
     } else if (new File(songsList.get(GUIlist.returnItem()).returnPath().replace("map.bMap", "background.jpg")).exists()) { // check for background image
       background = loadImage(songsList.get(GUIlist.returnItem()).returnPath().replace("map.bMap", "background.jpg"));
+      isVideo = false;
       background.resize(width, height);
     }
     data = new String[4];  //inits the data array
