@@ -251,7 +251,7 @@ void draw() {
       } else if (millis() - timePause > 3000) {  //countdown to start
         timePause = -1; 
         currentSong.play();
-        backgroundv.play();
+        if (backgroundv != null) backgroundv.play();
       }
       //animate notes
       //will only work if it isn't paused
@@ -294,7 +294,7 @@ void draw() {
     case "play/pause":
       //this pauses the game and the song
       if (currentSong.isPlaying()) {
-        backgroundv.pause();
+        if (backgroundv != null) backgroundv.pause();
         currentSong.pause();
       } else {
         timePause = millis();
